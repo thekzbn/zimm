@@ -1,0 +1,151 @@
+export type Locale = 'en' | 'yo';
+
+export interface Translations {
+  common: {
+    appName: string;
+    tagline: string;
+    loading: string;
+    error: string;
+    back: string;
+    close: string;
+    cancel: string;
+    confirm: string;
+    save: string;
+    copy: string;
+    copied: string;
+    difficulty: string;
+    time: string;
+    rating: string;
+    status: string;
+    unknown: string;
+  };
+  nav: {
+    solo: string;
+    liveH2H: string;
+    asyncH2H: string;
+    rules: string;
+    about: string;
+    maintainer: string;
+    backToGame: string;
+    switchLanguage: string;
+    switchTheme: string;
+  };
+  difficulties: {
+    beginner: string;
+    intermediate: string;
+    advanced: string;
+    expert: string;
+  };
+  game: {
+    cell: string;
+    pencilNotes: string;
+    notesMode: string;
+    normalMode: string;
+    erase: string;
+    hint: string;
+    hintsRemaining: string;
+    hintCostWarning: string;
+    hintStageNudge: string;
+    hintStageTechnique: string;
+    hintStageDeduction: string;
+    restart: string;
+    newPuzzle: string;
+    pause: string;
+    resume: string;
+    completed: string;
+    mistakes: string;
+    accuracy: string;
+    speed: string;
+    inputModeLabel: string;
+    notesHelp: string;
+    hintHelp: string;
+    shortcutsHelp: string;
+  };
+  modes: {
+    soloTitle: string;
+    soloBadge: string;
+    soloSubtitle: string;
+    liveTitle: string;
+    liveBadge: string;
+    liveSubtitle: string;
+    asyncTitle: string;
+    asyncBadge: string;
+    asyncSubtitle: string;
+  };
+  live: {
+    waitingForOpponent: string;
+    ready: string;
+    startMatch: string;
+    opponentProgress: string;
+    opponentFinished: string;
+    forfeit: string;
+    forfeitWarning: string;
+    matchInProgress: string;
+  };
+  async: {
+    createChallenge: string;
+    challengeCode: string;
+    joinChallenge: string;
+    enterCode: string;
+    yourTurn: string;
+    opponentTurn: string;
+    shareCodePrompt: string;
+    waitingOpponentFinish: string;
+    bothFinished: string;
+  };
+  result: {
+    victory: string;
+    defeat: string;
+    draw: string;
+    matchSummary: string;
+    yourPerformance: string;
+    opponentPerformance: string;
+    solveTime: string;
+    expectedTime: string;
+    accuracyScore: string;
+    hintPenalty: string;
+    netPerformance: string;
+    ratingChange: string;
+    newRating: string;
+    playAgain: string;
+  };
+  rules: {
+    title: string;
+    intro: string;
+    differentPuzzlesTitle: string;
+    differentPuzzlesBody: string;
+    pencilNotesTitle: string;
+    pencilNotesBody: string;
+    hintsTitle: string;
+    hintsBody: string;
+    scoringTitle: string;
+    scoringBody: string;
+  };
+  about: {
+    title: string;
+    description: string;
+    licenceLabel: string;
+    licenceValue: string;
+    sourceLabel: string;
+    sourceValue: string;
+    maintainerTools: string;
+  };
+  maintainer: {
+    title: string;
+    reviewQueueTitle: string;
+    simulationTitle: string;
+    flaggedMatches: string;
+    noFlaggedMatches: string;
+    anomalyScore: string;
+    triggerReason: string;
+    reviewAction: string;
+    markReviewed: string;
+    dismiss: string;
+    simulationHarness: string;
+    runSimulation: string;
+    poolBalance: string;
+    averageTax: string;
+    spikesCompensated: string;
+    netSustainability: string;
+  };
+}

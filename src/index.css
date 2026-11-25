@@ -1,0 +1,104 @@
+:root {
+  font-family: Inter, sans-serif;
+  font-feature-settings: 'liga' 1, 'calt' 1;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+}
+
+@supports (font-variation-settings: normal) {
+  :root {
+    font-family: InterVariable, sans-serif;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
+}
+
+input {
+  font-family: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid #a61b19;
+  outline-offset: 2px;
+}
+
+.zimm-main {
+  flex: 1;
+  padding: 0.75rem 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.zimm-workspace {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: start;
+  justify-items: center;
+}
+
+.zimm-board-column {
+  width: 100%;
+  max-width: min(94vw, 440px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.zimm-controls-column {
+  width: 100%;
+  max-width: min(94vw, 440px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zimm-digits-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 0.35rem;
+}
+
+@media (min-width: 820px) {
+  .zimm-workspace {
+    grid-template-columns: minmax(320px, 430px) minmax(270px, 340px);
+    gap: 1.5rem;
+    align-items: start;
+    justify-content: center;
+    justify-items: stretch;
+  }
+
+  .zimm-board-column {
+    max-width: 430px;
+  }
+
+  .zimm-controls-column {
+    max-width: 340px;
+  }
+
+  .zimm-digits-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.45rem;
+  }
+}
