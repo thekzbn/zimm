@@ -42,6 +42,7 @@ export const AsyncMatchView: React.FC = () => {
   const [isSolving, setIsSolving] = useState<boolean>(false);
   const [isOpponentRole, setIsOpponentRole] = useState<boolean>(false);
   const [resultModalDelta, setResultModalDelta] = useState<RatingDelta | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
 
   const timerRef = useRef<any>(null);
@@ -81,9 +82,10 @@ export const AsyncMatchView: React.FC = () => {
     const challenge = matchStore.getAsyncChallenge(trimmed);
 
     if (!challenge) {
-      alert('Challenge code not found. Please verify the code.');
+      setJoinError(t.async.codeNotFound);
       return;
     }
+    setJoinError(null);
 
     setActiveChallenge(challenge);
     setIsOpponentRole(true);
@@ -319,7 +321,7 @@ export const AsyncMatchView: React.FC = () => {
                 placeholder={t.async.enterCode}
                 value={inputCode}
                 maxLength={6}
-                onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                onChange={(e) => { setInputCode(e.target.value.toUpperCase()); setJoinError(null); }}
                 style={{
                   flex: 1,
                   padding: '0.55rem 0.75rem',
@@ -352,6 +354,19 @@ export const AsyncMatchView: React.FC = () => {
                 {t.async.joinChallenge}
               </button>
             </div>
+            {joinError && (
+              <p
+                role="alert"
+                style={{
+                  margin: '0.35rem 0 0',
+                  fontSize: '0.82rem',
+                  color: tokens.statusError,
+                  fontWeight: 500,
+                }}
+              >
+                {joinError}
+              </p>
+            )}
           </div>
         </div>
       </div>

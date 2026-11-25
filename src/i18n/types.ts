@@ -92,6 +92,7 @@ export interface Translations {
     shareCodePrompt: string;
     waitingOpponentFinish: string;
     bothFinished: string;
+    codeNotFound: string;
   };
   result: {
     victory: string;

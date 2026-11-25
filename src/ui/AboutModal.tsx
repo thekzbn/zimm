@@ -54,7 +54,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
           maxWidth: '460px',
           width: '100%',
           border: `1px solid ${tokens.borderSubtle}`,
-          boxShadow: '0 8px 28px rgba(33, 25, 20, 0.28)',
+
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
@@ -109,7 +109,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
             <span style={{ color: tokens.textMuted }}>{t.about.sourceLabel}</span>
             <a
-              href="https://github.com"
+              href="https://github.com/thekzbn/zimm"
               target="_blank"
               rel="noreferrer"
               style={{ color: tokens.brandPrimary, fontWeight: 600 }}

@@ -56,7 +56,7 @@ export const MatchResultModal: React.FC<MatchResultModalProps> = ({
           padding: '1.75rem',
           maxWidth: '480px',
           width: '100%',
-          boxShadow: '0 10px 30px rgba(33, 25, 20, 0.3)',
+
           border: `1px solid ${tokens.borderAccent}`,
           display: 'flex',
           flexDirection: 'column',

@@ -78,7 +78,7 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
         outline: isSelected ? `2px solid ${tokens.borderFocus}` : 'none',
         outlineOffset: '-2px',
         zIndex: isSelected ? 2 : 1,
-        transition: 'background-color 0.15s ease',
+        transition: 'background-color 0.15s cubic-bezier(0.57, -0.01, 0.21, 0.89)',
       }}
     >
       {cell.value !== 0 ? (

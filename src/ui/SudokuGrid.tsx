@@ -143,7 +143,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
         backgroundColor: tokens.bgElevated,
         borderRadius: '6px',
         overflow: 'hidden',
-        boxShadow: '0 4px 12px rgba(33, 25, 20, 0.08)',
+
       }}
     >
       {board.map((rowArr, r) =>

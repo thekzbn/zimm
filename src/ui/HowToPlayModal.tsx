@@ -61,7 +61,7 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({ isOpen, onClose 
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
-          boxShadow: '0 8px 28px rgba(33, 25, 20, 0.28)',
+
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>

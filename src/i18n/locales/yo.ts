@@ -92,6 +92,7 @@ export const yo: Translations = {
     shareCodePrompt: 'Pín kóòdù yìí pẹ̀lú olùdíje rẹ:',
     waitingOpponentFinish: 'A ti gbà àbájáde rẹ pamọ́. Ń dúró de olùdíje láti parí pọ́sù tirẹ̀.',
     bothFinished: 'Ẹ̀yin méjèèjì ti parí ìpèníjà náà.',
+    codeNotFound: 'A kò rí kóòdù ìpèníjà náà. Ṣàyẹ̀wò kóòdù náà kí o tún gbìyànjú.',
   },
   result: {
     victory: 'Ìṣẹ́gun',

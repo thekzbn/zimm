@@ -92,6 +92,7 @@ export const en: Translations = {
     shareCodePrompt: 'Share this code with a competitor:',
     waitingOpponentFinish: 'Your score is locked in. Waiting for your opponent to complete their board.',
     bothFinished: 'Both competitors have completed the challenge.',
+    codeNotFound: 'Challenge code not found. Check the code and try again.',
   },
   result: {
     victory: 'Victory',

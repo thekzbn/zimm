@@ -48,6 +48,7 @@ export const LiveMatchView: React.FC = () => {
     playerADelta: RatingDelta;
     playerBDelta: RatingDelta;
   } | null>(null);
+  const [showForfeitConfirm, setShowForfeitConfirm] = useState<boolean>(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const opponentSimRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -237,10 +238,14 @@ export const LiveMatchView: React.FC = () => {
 
   const handleForfeit = () => {
     if (!session || !isMatchActive) return;
-    if (confirm(t.live.forfeitWarning)) {
-      eventRecorder.recordEvent(session.id, session.playerAId, 'match_forfeited');
-      finalizeMatch(false);
-    }
+    setShowForfeitConfirm(true);
+  };
+
+  const confirmForfeit = () => {
+    if (!session) return;
+    setShowForfeitConfirm(false);
+    eventRecorder.recordEvent(session.id, session.playerAId, 'match_forfeited');
+    finalizeMatch(false);
   };
 
   if (!session) {
@@ -496,7 +501,7 @@ export const LiveMatchView: React.FC = () => {
                 style={{
                   width: `${playerPercent}%`,
                   backgroundColor: tokens.brandPrimary,
-                  transition: 'width 0.3s ease',
+                  transition: 'width 0.3s cubic-bezier(0.57, -0.01, 0.21, 0.89)',
                 }}
               />
             </div>
@@ -533,6 +538,81 @@ export const LiveMatchView: React.FC = () => {
         onClose={() => setCurrentHint(null)}
         hintsRemaining={3 - hintsUsed}
       />
+
+      {/* Forfeit confirm inline */}
+      {showForfeitConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="forfeit-dialog-title"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowForfeitConfirm(false); }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(33, 25, 20, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            zIndex: 120,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: tokens.bgElevated,
+              border: `1px solid ${tokens.borderAccent}`,
+              borderRadius: '8px',
+              padding: '1.5rem',
+              maxWidth: '360px',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            <h2
+              id="forfeit-dialog-title"
+              style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: tokens.textPrimary }}
+            >
+              {t.live.forfeitWarning}
+            </h2>
+            <div style={{ display: 'flex', gap: '0.65rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowForfeitConfirm(false)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '4px',
+                  border: `1px solid ${tokens.borderSubtle}`,
+                  backgroundColor: tokens.bgSecondary,
+                  color: tokens.textPrimary,
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {t.common.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={confirmForfeit}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '4px',
+                  border: 'none',
+                  backgroundColor: tokens.brandPrimary,
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                }}
+              >
+                {t.live.forfeit}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Result Modal */}
       {matchResult && (

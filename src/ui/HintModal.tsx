@@ -57,7 +57,7 @@ export const HintModal: React.FC<HintModalProps> = ({
           padding: '1.5rem',
           maxWidth: '440px',
           width: '100%',
-          boxShadow: '0 8px 24px rgba(33, 25, 20, 0.25)',
+
           border: `1px solid ${tokens.borderAccent}`,
           display: 'flex',
           flexDirection: 'column',

@@ -272,13 +272,12 @@ export const SoloGameView: React.FC = () => {
                 style={{
                   padding: '0.35rem 0.25rem',
                   borderRadius: '4px',
-                  border: 'none',
+                  border: tier === d ? `1px solid ${tokens.borderAccent}` : 'none',
                   backgroundColor: tier === d ? tokens.bgElevated : 'transparent',
                   color: tier === d ? tokens.brandPrimary : tokens.textPrimary,
                   fontWeight: tier === d ? 700 : 500,
                   fontSize: '0.76rem',
                   cursor: 'pointer',
-                  boxShadow: tier === d ? '0 1px 2px rgba(33, 25, 20, 0.1)' : 'none',
                 }}
               >
                 {t.difficulties[d]}
