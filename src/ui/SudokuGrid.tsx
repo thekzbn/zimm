@@ -8,6 +8,7 @@ import { SudokuCell } from './SudokuCell';
 interface SudokuGridProps {
   board: BoardMatrix;
   selectedCell: CellCoord | null;
+  completedUnitCells?: Set<string>;
   onSelectCell: (row: number, col: number) => void;
   onDigitInput: (digit: Digit) => void;
   onErase: () => void;
@@ -19,6 +20,7 @@ interface SudokuGridProps {
 export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
   board,
   selectedCell,
+  completedUnitCells,
   onSelectCell,
   onDigitInput,
   onErase,
@@ -175,6 +177,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
           const isSelected = selectedCell?.row === r && selectedCell?.col === c;
           const isPeer = peerKeys.has(`${r},${c}`);
           const isSameDigit = selectedValue !== 0 && cell.value === selectedValue;
+          const isUnitCompleted = completedUnitCells?.has(`${r},${c}`) ?? false;
 
           return (
             <SudokuCell
@@ -183,6 +186,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
               isSelected={isSelected}
               isPeerOfSelected={isPeer}
               isSameDigitAsSelected={isSameDigit}
+              isUnitCompleted={isUnitCompleted}
               onClick={onSelectCell}
             />
           );

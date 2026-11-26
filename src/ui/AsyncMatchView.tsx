@@ -21,6 +21,7 @@ import { Keypad } from './Keypad';
 import { MatchResultModal } from './MatchResultModal';
 import { MatchTimer } from './MatchTimer';
 import { SudokuGrid } from './SudokuGrid';
+import { getCompletedUnitCells } from './unitCompletion';
 
 function cloneBoard(matrix: BoardMatrix): BoardMatrix {
   return matrix.map((row) =>
@@ -37,6 +38,7 @@ export const AsyncMatchView: React.FC = () => {
   const [inputCode, setInputCode] = useState<string>('');
   const [board, setBoard] = useState<BoardMatrix>([]);
   const [history, setHistory] = useState<BoardMatrix[]>([]);
+  const [completedUnitCells, setCompletedUnitCells] = useState<Set<string>>(new Set());
   const [selectedCell, setSelectedCell] = useState<CellCoord | null>(null);
   const [inputMode, setInputMode] = useState<InputMode>('value');
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
@@ -150,6 +152,12 @@ export const AsyncMatchView: React.FC = () => {
           cell: selectedCell,
           digit,
         });
+
+        const completed = getCompletedUnitCells(updatedBoard, row, col);
+        if (completed.size > 0) {
+          setCompletedUnitCells(completed);
+          setTimeout(() => setCompletedUnitCells(new Set()), 650);
+        }
 
         if (isBoardCompleted(updatedBoard, targetPuzzle.solutionGrid)) {
           setIsSolving(false);
@@ -351,6 +359,7 @@ export const AsyncMatchView: React.FC = () => {
               <SudokuGrid
                 board={board}
                 selectedCell={selectedCell}
+                completedUnitCells={completedUnitCells}
                 onSelectCell={handleCellSelect}
                 onDigitInput={handleDigitInput}
                 onErase={handleErase}

@@ -8,6 +8,7 @@ interface SudokuCellProps {
   isSelected: boolean;
   isPeerOfSelected: boolean;
   isSameDigitAsSelected: boolean;
+  isUnitCompleted?: boolean;
   onClick: (row: number, col: number) => void;
 }
 
@@ -16,6 +17,7 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
   isSelected,
   isPeerOfSelected,
   isSameDigitAsSelected,
+  isUnitCompleted = false,
   onClick,
 }) => {
   const { tokens } = useTheme();
@@ -59,6 +61,7 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
       tabIndex={-1}
       aria-selected={isSelected}
       aria-label={ariaLabel}
+      className={isUnitCompleted ? 'zimm-cell--unit-complete' : undefined}
       onClick={() => onClick(cell.row, cell.col)}
       style={{
         position: 'relative',
@@ -78,6 +81,7 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
         outlineOffset: '-2px',
         zIndex: isSelected ? 2 : 1,
         transition: 'background-color 0.15s cubic-bezier(0.57, -0.01, 0.21, 0.89)',
+        animationDelay: isUnitCompleted ? `${((cell.row + cell.col) % 9) * 20}ms` : undefined,
       }}
     >
       {cell.value !== 0 ? (
