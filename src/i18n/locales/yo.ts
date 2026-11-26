@@ -20,6 +20,7 @@ export const yo: Translations = {
     unknown: 'Àìmọ̀',
   },
   nav: {
+    home: 'Ilé',
     solo: 'Ìdánrawò Nìkan',
     liveH2H: 'Ìdíje Lẹ́sẹ̀kẹsẹ̀',
     asyncH2H: 'Ìpèníjà Lọ́tọ̀ọ̀tọ̀',
@@ -71,6 +72,13 @@ export const yo: Translations = {
     asyncTitle: 'Ìpèníjà Lọ́tọ̀ọ̀tọ̀',
     asyncBadge: 'Ìdíje Olówó',
     asyncSubtitle: 'Yanjú pọ́sù ní àkókò tirẹ̀ pẹ̀lú kóòdù ìpèníjà. Ìpele ìdíje yóò yí padà nígbà tí ẹ̀yin méjèèjì bá parí.',
+  },
+  landing: {
+    headline: 'Ìdíje Sudoku Tí A Wọ̀n Lọ́nà Tó Tọ́',
+    subtitle: 'Kópa nínú ìdíje lẹ́sẹ̀kẹsẹ̀ tàbí ìpèníjà lọ́tọ̀ọ̀tọ̀ lórí pọ́sù tó péye. Àbájáde máa ń ṣe àtúnṣe ìyára, ìpéye, àti lílo ìmọ̀ràn rẹ pẹ̀lú ìpele ìṣòro pọ́sù.',
+    primaryCta: 'Bẹ̀rẹ̀ Ìdíje Lẹ́sẹ̀kẹsẹ̀',
+    secondaryAsync: 'Ìpèníjà Lọ́tọ̀ọ̀tọ̀',
+    secondarySolo: 'Ìdánrawò Nìkan',
   },
   live: {
     waitingForOpponent: 'Ń dúró de olùdíje láti darapọ̀...',

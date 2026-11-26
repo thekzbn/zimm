@@ -66,5 +66,5 @@ Applied in CSS:
 - **Keyboard Navigation & Focus Trapping:** Full arrow-key navigation (with direct `tabIndex={0}` grid entry), numerical keys 1-9, Delete/Backspace for clearing, `U` or `Ctrl+Z` for undo, `N` for toggling notes mode, `H` for requesting staged hints, and `Escape` with focus trapping inside modal dialogs.
 - **Reduced Motion:** `prefers-reduced-motion: reduce` collapses transition durations globally in `src/index.css`.
 - **Focus Visibility:** All interactive controls apply `:focus-visible` high-contrast outlines (`2px solid #a61b19`) via `src/index.css`.
-- **Responsive Play Area:** Uses a two-column workspace (`zimm-workspace`) on viewports `>= 820px` and a compact stacked layout on smaller screens with a 3x3 digit pad so touch targets remain >= 44px even on narrow viewports.
+- **Responsive Play Area:** Uses a `chess.com`-inspired persistent left sidebar on viewports `>= 860px` (collapsing to a compact top bar on mobile) and a two-column workspace (`zimm-workspace`) on viewports `>= 820px` with a 3x3 digit pad so touch targets remain >= 44px even on narrow viewports.
 - **ARIA Grid Semantics:** The 9x9 grid implements `role="grid"` with individual buttons as `role="gridcell"`, `aria-selected`, and descriptive screen-reader coordinates including active pencil notes.

@@ -3,7 +3,7 @@ import { useI18n } from '../i18n/i18nContext';
 import { matchStore } from '../server/matchStore';
 import { useTheme } from '../theme/themeContext';
 
-export type GameModeTab = 'solo' | 'live' | 'async';
+export type GameModeTab = 'home' | 'live' | 'async' | 'solo';
 
 interface HeaderProps {
   activeMode: GameModeTab;
@@ -31,11 +31,19 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="zimm-header">
-      <div className="zimm-header__brand">
-        <span className="zimm-header__mark" aria-hidden="true">
-          Z
-        </span>
-        <h1 className="zimm-header__wordmark">{t.common.appName}</h1>
+      <div className="zimm-header__top">
+        <button
+          type="button"
+          className="zimm-header__brand"
+          onClick={() => onSelectMode('home')}
+          aria-label={t.nav.home}
+        >
+          <span className="zimm-header__mark" aria-hidden="true">
+            Z
+          </span>
+          <h1 className="zimm-header__wordmark">{t.common.appName}</h1>
+        </button>
+
         <span className="zimm-header__rating" aria-label={`${t.common.rating}: ${rating}`}>
           {t.common.rating} <strong>{rating}</strong>
         </span>
@@ -45,10 +53,10 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           type="button"
           className="zimm-nav__tab"
-          onClick={() => onSelectMode('solo')}
-          aria-current={activeMode === 'solo' ? 'page' : undefined}
+          onClick={() => onSelectMode('home')}
+          aria-current={activeMode === 'home' ? 'page' : undefined}
         >
-          {t.nav.solo}
+          {t.nav.home}
         </button>
         <button
           type="button"
@@ -65,6 +73,14 @@ export const Header: React.FC<HeaderProps> = ({
           aria-current={activeMode === 'async' ? 'page' : undefined}
         >
           {t.nav.asyncH2H}
+        </button>
+        <button
+          type="button"
+          className="zimm-nav__tab"
+          onClick={() => onSelectMode('solo')}
+          aria-current={activeMode === 'solo' ? 'page' : undefined}
+        >
+          {t.nav.solo}
         </button>
       </nav>
 

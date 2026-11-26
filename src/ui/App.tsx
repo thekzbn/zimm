@@ -5,6 +5,7 @@ import { AsyncMatchView } from './AsyncMatchView';
 import { ErrorBoundary } from './ErrorBoundary';
 import { GameModeTab, Header } from './Header';
 import { HowToPlayModal } from './HowToPlayModal';
+import { LandingView } from './LandingView';
 import { LiveMatchView } from './LiveMatchView';
 import { ReviewQueueView } from './ReviewQueueView';
 import { SimulationModal } from './SimulationModal';
@@ -12,7 +13,7 @@ import { SoloGameView } from './SoloGameView';
 
 export const App: React.FC = () => {
   const { t } = useI18n();
-  const [activeMode, setActiveMode] = useState<GameModeTab>('solo');
+  const [activeMode, setActiveMode] = useState<GameModeTab>('home');
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const [isAboutOpen, setIsAboutOpen] = useState<boolean>(false);
   const [resetKey, setResetKey] = useState<number>(0);
@@ -40,13 +41,13 @@ export const App: React.FC = () => {
 
   if (isMaintainerRoute) {
     return (
-      <div className="zimm-app">
-        <header className="zimm-header">
+      <div className="zimm-app" style={{ display: 'flex', flexDirection: 'column' }}>
+        <header className="zimm-header" style={{ position: 'static', height: 'auto', flexDirection: 'row', borderRight: 'none', borderBottom: '1px solid var(--color-borderSubtle)' }}>
           <h1 className="zimm-header__wordmark">{t.maintainer.title}</h1>
-          <div />
           <button
             type="button"
             className="zimm-btn-util"
+            style={{ width: 'auto' }}
             onClick={closeMaintainerConsole}
           >
             {t.nav.backToGame}
@@ -84,9 +85,10 @@ export const App: React.FC = () => {
           fallbackActionLabel={t.game.restart}
           onReset={() => setResetKey((k) => k + 1)}
         >
-          {activeMode === 'solo' && <SoloGameView />}
+          {activeMode === 'home' && <LandingView onSelectMode={setActiveMode} />}
           {activeMode === 'live' && <LiveMatchView />}
           {activeMode === 'async' && <AsyncMatchView />}
+          {activeMode === 'solo' && <SoloGameView />}
         </ErrorBoundary>
       </main>
 
