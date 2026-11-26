@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useI18n } from '../i18n/i18nContext';
-import { useTheme } from '../theme/themeContext';
+import { useModalFocusTrap } from './useModalFocusTrap';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -13,17 +13,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({
   onClose,
   onOpenMaintainer,
 }) => {
-  const { tokens } = useTheme();
   const { t } = useI18n();
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [isOpen, onClose]);
+  const dialogRef = useModalFocusTrap(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -32,87 +23,60 @@ export const AboutModal: React.FC<AboutModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="about-modal-title"
+      className="zimm-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(33, 25, 20, 0.65)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        zIndex: 110,
-      }}
     >
-      <div
-        style={{
-          backgroundColor: tokens.bgElevated,
-          borderRadius: '8px',
-          padding: '1.5rem',
-          maxWidth: '460px',
-          width: '100%',
-          border: `1px solid ${tokens.borderSubtle}`,
-
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2
-            id="about-modal-title"
-            style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: tokens.textPrimary }}
-          >
+      <div ref={dialogRef} className="zimm-modal zimm-modal--md" tabIndex={-1}>
+        <div className="zimm-modal__header">
+          <h2 id="about-modal-title" className="zimm-modal__title">
             {t.about.title}
           </h2>
           <button
+            type="button"
+            className="zimm-modal__close"
             onClick={onClose}
             aria-label={t.common.close}
-            style={{
-              background: 'none',
-              border: `1px solid ${tokens.borderSubtle}`,
-              borderRadius: '4px',
-              fontSize: '0.9rem',
-              color: tokens.textMuted,
-              cursor: 'pointer',
-              padding: '0.25rem 0.5rem',
-            }}
           >
             {t.common.close}
           </button>
         </div>
 
-        <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5, color: tokens.textPrimary }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 'var(--text-sm)',
+            lineHeight: 'var(--lh-normal)',
+            color: 'var(--color-textPrimary)',
+          }}
+        >
           {t.about.description}
         </p>
 
         <div
           style={{
-            backgroundColor: tokens.bgSecondary,
-            padding: '0.85rem',
-            borderRadius: '6px',
-            border: `1px solid ${tokens.borderSubtle}`,
+            padding: 'var(--space-3) 0',
+            borderTop: '1px solid var(--color-borderSubtle)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.5rem',
-            fontSize: '0.85rem',
+            gap: 'var(--space-2)',
+            fontSize: 'var(--text-sm)',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
-            <span style={{ color: tokens.textMuted }}>{t.about.licenceLabel}</span>
-            <span style={{ color: tokens.textPrimary, fontWeight: 600, textAlign: 'right' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+            <span style={{ color: 'var(--color-textMuted)' }}>{t.about.licenceLabel}</span>
+            <span style={{ color: 'var(--color-textPrimary)', fontWeight: 600, textAlign: 'right' }}>
               {t.about.licenceValue}
             </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
-            <span style={{ color: tokens.textMuted }}>{t.about.sourceLabel}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+            <span style={{ color: 'var(--color-textMuted)' }}>{t.about.sourceLabel}</span>
             <a
               href="https://github.com/thekzbn/zimm"
               target="_blank"
               rel="noreferrer"
-              style={{ color: tokens.brandPrimary, fontWeight: 600 }}
+              style={{ color: 'var(--color-brandPrimary)', fontWeight: 600 }}
             >
               {t.about.sourceValue}
             </a>
@@ -120,43 +84,24 @@ export const AboutModal: React.FC<AboutModalProps> = ({
         </div>
 
         <div
-          style={{
-            borderTop: `1px solid ${tokens.borderSubtle}`,
-            paddingTop: '0.75rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
+          className="zimm-modal__footer"
+          style={{ justifyContent: 'space-between', alignItems: 'center' }}
         >
           <button
+            type="button"
+            className="zimm-btn-util"
             onClick={() => {
               onClose();
               onOpenMaintainer();
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: '0.25rem 0',
-              color: tokens.textMuted,
-              fontSize: '0.8rem',
-              textDecoration: 'underline',
-              cursor: 'pointer',
             }}
           >
             {t.about.maintainerTools}
           </button>
           <button
+            type="button"
+            className="zimm-btn-primary"
+            style={{ width: 'auto' }}
             onClick={onClose}
-            style={{
-              padding: '0.45rem 1rem',
-              borderRadius: '4px',
-              border: 'none',
-              backgroundColor: tokens.brandPrimary,
-              color: '#ffffff',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-            }}
           >
             {t.common.close}
           </button>

@@ -20,7 +20,6 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
 }) => {
   const { tokens } = useTheme();
 
-  // Determine border styles for 3x3 block separation
   const borderRight = cell.col % 3 === 2 && cell.col !== 8
     ? `2px solid ${tokens.borderStrong}`
     : `1px solid ${tokens.borderSubtle}`;
@@ -28,7 +27,6 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
     ? `2px solid ${tokens.borderStrong}`
     : `1px solid ${tokens.borderSubtle}`;
 
-  // Background priority: error > hint target > selected > same digit > peer > base
   let backgroundColor = tokens.bgElevated;
   if (cell.isError) {
     backgroundColor = tokens.bgError;
@@ -42,7 +40,6 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
     backgroundColor = tokens.bgPeer;
   }
 
-  // Digit color
   let digitColor = tokens.digitPlayer;
   if (cell.isGiven) {
     digitColor = tokens.digitGiven;
@@ -57,7 +54,9 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
 
   return (
     <button
+      type="button"
       role="gridcell"
+      tabIndex={-1}
       aria-selected={isSelected}
       aria-label={ariaLabel}
       onClick={() => onClick(cell.row, cell.col)}
@@ -67,8 +66,8 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
         aspectRatio: '1 / 1',
         backgroundColor,
         border: 'none',
-        borderRight,
-        borderBottom,
+        borderRight: cell.col === 8 ? 'none' : borderRight,
+        borderBottom: cell.row === 8 ? 'none' : borderBottom,
         padding: 0,
         margin: 0,
         display: 'flex',
@@ -84,11 +83,13 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
       {cell.value !== 0 ? (
         <span
           style={{
-            fontSize: '1.45rem',
+            fontSize: 'var(--text-digit)',
             fontWeight: cell.isGiven ? 700 : 600,
             color: digitColor,
             fontFamily: 'inherit',
+            fontVariantNumeric: 'tabular-nums',
             userSelect: 'none',
+            lineHeight: 1,
           }}
         >
           {cell.value}

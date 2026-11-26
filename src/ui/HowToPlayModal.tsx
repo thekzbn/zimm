@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useI18n } from '../i18n/i18nContext';
-import { useTheme } from '../theme/themeContext';
+import { useModalFocusTrap } from './useModalFocusTrap';
 
 interface HowToPlayModalProps {
   isOpen: boolean;
@@ -8,19 +8,16 @@ interface HowToPlayModalProps {
 }
 
 export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({ isOpen, onClose }) => {
-  const { tokens } = useTheme();
   const { t } = useI18n();
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [isOpen, onClose]);
+  const dialogRef = useModalFocusTrap(isOpen, onClose);
 
   if (!isOpen) return null;
+
+  const modes = [
+    { title: t.modes.soloTitle, badge: t.modes.soloBadge, desc: t.modes.soloSubtitle },
+    { title: t.modes.liveTitle, badge: t.modes.liveBadge, desc: t.modes.liveSubtitle },
+    { title: t.modes.asyncTitle, badge: t.modes.asyncBadge, desc: t.modes.asyncSubtitle },
+  ];
 
   const sections = [
     { title: t.rules.differentPuzzlesTitle, body: t.rules.differentPuzzlesBody },
@@ -34,134 +31,90 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({ isOpen, onClose 
       role="dialog"
       aria-modal="true"
       aria-labelledby="guide-modal-title"
+      className="zimm-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(33, 25, 20, 0.65)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        zIndex: 110,
-      }}
     >
-      <div
-        style={{
-          backgroundColor: tokens.bgElevated,
-          borderRadius: '8px',
-          padding: '1.5rem',
-          maxWidth: '620px',
-          width: '100%',
-          maxHeight: '88vh',
-          overflowY: 'auto',
-          border: `1px solid ${tokens.borderSubtle}`,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+      <div ref={dialogRef} className="zimm-modal zimm-modal--lg" tabIndex={-1}>
+        <div className="zimm-modal__header">
           <div>
-            <h2
-              id="guide-modal-title"
-              style={{ margin: 0, fontSize: '1.35rem', fontWeight: 700, color: tokens.textPrimary }}
-            >
+            <h2 id="guide-modal-title" className="zimm-modal__title">
               {t.rules.title}
             </h2>
-            <p style={{ margin: '0.35rem 0 0', fontSize: '0.9rem', color: tokens.textMuted }}>
+            <p className="zimm-mode-header__desc" style={{ marginTop: 'var(--space-1)' }}>
               {t.rules.intro}
             </p>
           </div>
           <button
+            type="button"
+            className="zimm-modal__close"
             onClick={onClose}
             aria-label={t.common.close}
-            style={{
-              background: 'none',
-              border: `1px solid ${tokens.borderSubtle}`,
-              borderRadius: '4px',
-              fontSize: '0.85rem',
-              color: tokens.textMuted,
-              cursor: 'pointer',
-              padding: '0.3rem 0.6rem',
-              flexShrink: 0,
-            }}
           >
             {t.common.close}
           </button>
         </div>
 
-        {/* Mode comparison summary */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-            gap: '0.65rem',
+            gap: 'var(--space-3)',
+            padding: 'var(--space-3) 0',
+            borderTop: '1px solid var(--color-borderSubtle)',
+            borderBottom: '1px solid var(--color-borderSubtle)',
           }}
         >
-          {[
-            { title: t.modes.soloTitle, badge: t.modes.soloBadge, desc: t.modes.soloSubtitle, rated: false },
-            { title: t.modes.liveTitle, badge: t.modes.liveBadge, desc: t.modes.liveSubtitle, rated: true },
-            { title: t.modes.asyncTitle, badge: t.modes.asyncBadge, desc: t.modes.asyncSubtitle, rated: true },
-          ].map((m) => (
-            <div
-              key={m.title}
-              style={{
-                backgroundColor: tokens.bgSecondary,
-                padding: '0.75rem',
-                borderRadius: '6px',
-                border: `1px solid ${tokens.borderSubtle}`,
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.35rem', marginBottom: '0.25rem' }}>
-                <strong style={{ fontSize: '0.88rem', color: tokens.textPrimary }}>{m.title}</strong>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    padding: '0.1rem 0.4rem',
-                    borderRadius: '4px',
-                    backgroundColor: m.rated ? tokens.brandPrimary : tokens.bgElevated,
-                    color: m.rated ? '#ffffff' : tokens.textMuted,
-                    border: m.rated ? 'none' : `1px solid ${tokens.borderSubtle}`,
-                  }}
-                >
-                  {m.badge}
+          {modes.map((m) => (
+            <div key={m.title}>
+              <div
+                style={{
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 700,
+                  color: 'var(--color-textPrimary)',
+                  marginBottom: 'var(--space-1)',
+                }}
+              >
+                {m.title}{' '}
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 500, color: 'var(--color-textMuted)' }}>
+                  ({m.badge})
                 </span>
               </div>
-              <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: 1.4, color: tokens.textMuted }}>
+              <p className="zimm-mode-header__desc" style={{ fontSize: 'var(--text-xs)' }}>
                 {m.desc}
               </p>
             </div>
           ))}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {sections.map((section) => (
-            <div
-              key={section.title}
-              style={{
-                backgroundColor: tokens.bgSecondary,
-                padding: '0.85rem 1rem',
-                borderRadius: '6px',
-                border: `1px solid ${tokens.borderSubtle}`,
-              }}
-            >
-              <h3 style={{ margin: '0 0 0.25rem', fontSize: '0.98rem', color: tokens.brandPrimary }}>
-                {section.title}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {sections.map((sec) => (
+            <div key={sec.title}>
+              <h3
+                style={{
+                  margin: '0 0 var(--space-1)',
+                  fontSize: 'var(--text-base)',
+                  fontWeight: 700,
+                  color: 'var(--color-textPrimary)',
+                }}
+              >
+                {sec.title}
               </h3>
-              <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.5, color: tokens.textPrimary }}>
-                {section.body}
-              </p>
+              <p className="zimm-mode-header__desc">{sec.body}</p>
             </div>
           ))}
         </div>
 
-        <div style={{ fontSize: '0.8rem', color: tokens.textMuted }}>
-          {t.game.shortcutsHelp}
+        <div className="zimm-modal__footer">
+          <button
+            type="button"
+            className="zimm-btn-primary"
+            style={{ width: 'auto' }}
+            onClick={onClose}
+          >
+            {t.common.close}
+          </button>
         </div>
       </div>
     </div>

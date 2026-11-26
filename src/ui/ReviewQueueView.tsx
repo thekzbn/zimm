@@ -21,30 +21,18 @@ export const ReviewQueueView: React.FC = () => {
   };
 
   return (
-    <div
+    <section
       style={{
-        backgroundColor: tokens.bgElevated,
-        borderRadius: '8px',
-        padding: '1.25rem',
-        border: `1px solid ${tokens.borderSubtle}`,
+        paddingTop: 'var(--space-4)',
+        borderTop: `1px solid ${tokens.borderSubtle}`,
         display: 'flex',
         flexDirection: 'column',
-        gap: '1rem',
+        gap: 'var(--space-3)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, fontSize: '1.1rem', color: tokens.textPrimary }}>
-          {t.maintainer.reviewQueueTitle}
-        </h3>
-        <span
-          style={{
-            fontSize: '0.8rem',
-            backgroundColor: tokens.bgSecondary,
-            padding: '0.2rem 0.5rem',
-            borderRadius: '4px',
-            color: tokens.textMuted,
-          }}
-        >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <h2 className="zimm-mode-header__title">{t.maintainer.reviewQueueTitle}</h2>
+        <span style={{ fontSize: 'var(--text-xs)', color: tokens.textMuted, fontVariantNumeric: 'tabular-nums' }}>
           {entries.length} items
         </span>
       </div>
@@ -52,110 +40,77 @@ export const ReviewQueueView: React.FC = () => {
       {entries.length === 0 ? (
         <div
           style={{
-            padding: '2rem',
+            padding: 'var(--space-6) var(--space-4)',
             textAlign: 'center',
             color: tokens.textMuted,
-            fontSize: '0.9rem',
+            fontSize: 'var(--text-sm)',
           }}
         >
           {t.maintainer.noFlaggedMatches}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           {entries.map((entry) => (
             <div
               key={entry.id}
               style={{
-                backgroundColor: tokens.bgSecondary,
-                padding: '0.85rem 1rem',
-                borderRadius: '6px',
-                border: `1px solid ${tokens.borderSubtle}`,
+                padding: 'var(--space-3) 0',
+                borderTop: `1px solid ${tokens.borderSubtle}`,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.5rem',
+                gap: 'var(--space-2)',
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-2)' }}>
                 <div>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: tokens.brandPrimary }}>
+                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: tokens.brandPrimary }}>
                     Match: {entry.matchId}
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: tokens.textMuted, marginLeft: '0.5rem' }}>
+                  <span style={{ fontSize: 'var(--text-xs)', color: tokens.textMuted, marginLeft: 'var(--space-2)' }}>
                     Player: {entry.playerId}
                   </span>
                 </div>
-                <div
+                <span
                   style={{
-                    fontSize: '0.75rem',
+                    fontSize: 'var(--text-xs)',
                     fontWeight: 700,
-                    padding: '0.15rem 0.45rem',
-                    borderRadius: '4px',
-                    backgroundColor:
-                      entry.status === 'pending'
-                        ? tokens.bgError
-                        : tokens.bgElevated,
-                    color:
-                      entry.status === 'pending'
-                        ? tokens.statusError
-                        : tokens.textMuted,
+                    color: entry.status === 'pending' ? tokens.statusError : tokens.textMuted,
                   }}
                 >
                   {entry.status.toUpperCase()} (Score: {entry.anomalyScore})
-                </div>
+                </span>
               </div>
 
-              {/* Signals */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
                 {entry.signals.map((sig, sIdx) => (
                   <div
                     key={sIdx}
                     style={{
-                      fontSize: '0.78rem',
+                      fontSize: 'var(--text-xs)',
                       color: tokens.textSecondary,
-                      lineHeight: 1.3,
+                      lineHeight: 'var(--lh-normal)',
                     }}
                   >
-                    • <strong>{sig.type}</strong>: {sig.description}
+                    <strong>{sig.type}</strong>: {sig.description}
                   </div>
                 ))}
               </div>
 
-              {/* Actions */}
               {entry.status === 'pending' && (
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                   <button
+                    type="button"
+                    className="zimm-btn-primary"
+                    style={{ width: 'auto', minHeight: '34px', padding: '6px 12px', fontSize: 'var(--text-xs)' }}
                     onClick={() => handleResolve(entry.id, 'verified_clean')}
-                    style={{
-                      padding: '0.35rem 0.65rem',
-                      borderRadius: '4px',
-                      backgroundColor: tokens.statusSuccess,
-                      color: '#ffffff',
-                      border: 'none',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
                   >
                     {t.maintainer.markReviewed}
                   </button>
                   <button
+                    type="button"
+                    className="zimm-btn-secondary"
+                    style={{ minHeight: '34px', padding: '6px 12px', fontSize: 'var(--text-xs)' }}
                     onClick={() => handleResolve(entry.id, 'dismissed')}
-                    style={{
-                      padding: '0.35rem 0.65rem',
-                      borderRadius: '4px',
-                      backgroundColor: tokens.bgElevated,
-                      color: tokens.textPrimary,
-                      border: `1px solid ${tokens.borderSubtle}`,
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
                   >
                     {t.maintainer.dismiss}
                   </button>
@@ -165,6 +120,6 @@ export const ReviewQueueView: React.FC = () => {
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 };

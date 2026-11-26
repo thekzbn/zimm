@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [Unreleased]
+
+### Changed
+- **Ground-Up UI & UX Redesign (`refactor/ui-redesign`):** Rebuilt the interface with a strictly flat 1px-bordered layout, generous whitespace, a constrained 4-step prose type scale, inline difficulty tabs and stats above the board, and a 3x3 digit keypad with Undo/Erase/Notes/Hint actions.
+- **Accessibility & Resilience:** Darkened light-mode `textMuted` (`#5e423e`) and `statusError` (`#821917`) to pass WCAG AA 4.5:1 contrast, added modal focus trapping (`useModalFocusTrap`), `ErrorBoundary` recovery around game views, `tabIndex={0}` grid entry, `role="alert"` on inline errors, and `prefers-reduced-motion` support.
+
+---
+
 ## [0.1.0] - 2026-11-22
 
 ### Added

@@ -2,16 +2,19 @@ import React from 'react';
 import { InputMode } from '../game/types';
 import { useI18n } from '../i18n/i18nContext';
 import { Digit } from '../timely/types';
-import { useTheme } from '../theme/themeContext';
 
 interface KeypadProps {
   inputMode: InputMode;
   onToggleInputMode: () => void;
   onDigitClick: (digit: Digit) => void;
   onEraseClick: () => void;
+  onUndoClick?: () => void;
+  canUndo?: boolean;
   onHintClick?: () => void;
   hintsRemaining?: number;
   maxHints?: number;
+  onPrimaryAction?: () => void;
+  primaryActionLabel?: string;
 }
 
 export const Keypad: React.FC<KeypadProps> = ({
@@ -19,165 +22,99 @@ export const Keypad: React.FC<KeypadProps> = ({
   onToggleInputMode,
   onDigitClick,
   onEraseClick,
+  onUndoClick,
+  canUndo = false,
   onHintClick,
   hintsRemaining = 3,
   maxHints = 3,
+  onPrimaryAction,
+  primaryActionLabel,
 }) => {
-  const { tokens } = useTheme();
   const { t } = useI18n();
-
   const isNotes = inputMode === 'notes';
 
+  const toolbarClass = onHintClick ? 'zimm-toolbar' : 'zimm-toolbar zimm-toolbar--no-hint';
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.65rem',
-        width: '100%',
-      }}
-    >
-      {/* Input mode segmented control */}
-      <div
-        role="group"
-        aria-label={t.game.inputModeLabel}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '0.35rem',
-          backgroundColor: tokens.bgSecondary,
-          padding: '0.25rem',
-          borderRadius: '6px',
-          border: `1px solid ${tokens.borderSubtle}`,
-        }}
-      >
+    <div className="zimm-keypad">
+      {/* Action toolbar inspired by sudoku.com: Undo, Erase, Notes, Hint */}
+      <div className={toolbarClass} role="group" aria-label={t.game.inputModeLabel}>
         <button
           type="button"
-          onClick={() => {
-            if (isNotes) onToggleInputMode();
-          }}
-          aria-pressed={!isNotes}
-          style={{
-            padding: '0.5rem 0.5rem',
-            borderRadius: '4px',
-            border: 'none',
-            backgroundColor: !isNotes ? tokens.brandPrimary : 'transparent',
-            color: !isNotes ? '#ffffff' : tokens.textPrimary,
-            fontWeight: 600,
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-          }}
+          className="zimm-tool-btn"
+          onClick={onUndoClick}
+          disabled={!onUndoClick || !canUndo}
+          aria-label={`${t.common.back} (Ctrl+Z)`}
         >
-          {t.game.normalMode}
+          <span>{t.common.back}</span>
+          <span className="zimm-tool-btn__sub">Z</span>
         </button>
+
         <button
           type="button"
-          onClick={() => {
-            if (!isNotes) onToggleInputMode();
-          }}
+          className="zimm-tool-btn"
+          onClick={onEraseClick}
+          aria-label={`${t.game.erase} (Delete)`}
+        >
+          <span>{t.game.erase}</span>
+          <span className="zimm-tool-btn__sub">Del</span>
+        </button>
+
+        <button
+          type="button"
+          className="zimm-tool-btn"
+          onClick={onToggleInputMode}
           aria-pressed={isNotes}
-          style={{
-            padding: '0.5rem 0.5rem',
-            borderRadius: '4px',
-            border: 'none',
-            backgroundColor: isNotes ? tokens.brandPrimary : 'transparent',
-            color: isNotes ? '#ffffff' : tokens.textPrimary,
-            fontWeight: 600,
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-          }}
+          aria-label={`${t.game.notesMode} (N)`}
         >
-          {t.game.notesMode} (N)
+          <span>{t.game.notesMode}</span>
+          <span className="zimm-tool-btn__sub">{isNotes ? 'ON' : 'OFF'}</span>
         </button>
+
+        {onHintClick && (
+          <button
+            type="button"
+            className="zimm-tool-btn"
+            onClick={onHintClick}
+            disabled={hintsRemaining <= 0}
+            aria-label={`${t.game.hint} (${hintsRemaining}/${maxHints})`}
+          >
+            <span>{t.game.hint}</span>
+            <span className="zimm-tool-btn__sub">
+              {hintsRemaining}/{maxHints}
+            </span>
+          </button>
+        )}
       </div>
 
-      {/* Digit buttons 1-9 */}
-      <div className="zimm-digits-grid" role="group" aria-label="Number keypad">
+      {/* 3x3 Digit Keypad matching sudoku.com */}
+      <div className="zimm-digits" role="group" aria-label="Number keypad">
         {([1, 2, 3, 4, 5, 6, 7, 8, 9] as Digit[]).map((digit) => (
           <button
             key={digit}
             type="button"
+            className={`zimm-digit-btn ${isNotes ? 'zimm-digit-btn--notes' : ''}`}
             onClick={() => onDigitClick(digit)}
             aria-label={isNotes ? `${t.game.pencilNotes} ${digit}` : `${digit}`}
-            style={{
-              minHeight: '44px',
-              borderRadius: '6px',
-              border: `1px solid ${tokens.borderSubtle}`,
-              backgroundColor: tokens.bgElevated,
-              color: isNotes ? tokens.digitNote : tokens.brandPrimary,
-              fontWeight: 700,
-              fontSize: '1.2rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontVariantNumeric: 'tabular-nums',
-            }}
           >
             {digit}
           </button>
         ))}
       </div>
 
-      {/* Secondary turn actions: Erase and Hint */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: onHintClick ? '1fr 1fr' : '1fr',
-          gap: '0.5rem',
-        }}
-      >
+      {/* Primary CTA directly below digit pad */}
+      {onPrimaryAction && primaryActionLabel && (
         <button
           type="button"
-          onClick={onEraseClick}
-          aria-label={`${t.game.erase} (Delete)`}
-          style={{
-            padding: '0.55rem 0.6rem',
-            borderRadius: '6px',
-            border: `1px solid ${tokens.borderSubtle}`,
-            backgroundColor: tokens.bgSecondary,
-            color: tokens.textPrimary,
-            fontWeight: 600,
-            fontSize: '0.82rem',
-            cursor: 'pointer',
-          }}
+          className="zimm-btn-primary"
+          onClick={onPrimaryAction}
         >
-          {t.game.erase} (Del)
+          {primaryActionLabel}
         </button>
+      )}
 
-        {onHintClick && (
-          <button
-            type="button"
-            onClick={onHintClick}
-            disabled={hintsRemaining <= 0}
-            aria-label={`${t.game.hint} (${hintsRemaining}/${maxHints})`}
-            style={{
-              padding: '0.55rem 0.6rem',
-              borderRadius: '6px',
-              border: `1px solid ${hintsRemaining > 0 ? tokens.borderAccent : tokens.borderSubtle}`,
-              backgroundColor: tokens.bgSecondary,
-              color: hintsRemaining > 0 ? tokens.brandPrimary : tokens.textMuted,
-              fontWeight: 600,
-              fontSize: '0.82rem',
-              cursor: hintsRemaining > 0 ? 'pointer' : 'not-allowed',
-              opacity: hintsRemaining > 0 ? 1 : 0.6,
-            }}
-          >
-            {t.game.hint} ({hintsRemaining}/{maxHints})
-          </button>
-        )}
-      </div>
-
-      <p
-        style={{
-          margin: 0,
-          minHeight: '2.3rem',
-          fontSize: '0.76rem',
-          color: tokens.textMuted,
-          lineHeight: 1.4,
-        }}
-      >
-        {isNotes ? t.game.notesHelp : onHintClick ? t.game.hintHelp : ''}
+      <p className="zimm-help">
+        {isNotes ? t.game.notesHelp : onHintClick ? t.game.hintHelp : t.game.shortcutsHelp}
       </p>
     </div>
   );

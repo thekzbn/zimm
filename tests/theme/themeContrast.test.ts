@@ -28,12 +28,24 @@ describe('Theme Tokens and WCAG Contrast Verification', () => {
 
   it('guarantees WCAG AA readable contrast for primary text on background in Light mode', () => {
     const contrast = getContrastRatio(LIGHT_TOKENS.textPrimary, LIGHT_TOKENS.bgPrimary);
-    expect(contrast).toBeGreaterThan(4.5); // WCAG AA requirement is 4.5:1
+    expect(contrast).toBeGreaterThan(4.5);
   });
 
   it('guarantees WCAG AA readable contrast for primary text on background in Dark mode', () => {
     const contrast = getContrastRatio(DARK_TOKENS.textPrimary, DARK_TOKENS.bgPrimary);
     expect(contrast).toBeGreaterThan(4.5);
+  });
+
+  it('guarantees WCAG AA readable contrast for muted text on primary and secondary surfaces in both modes', () => {
+    expect(getContrastRatio(LIGHT_TOKENS.textMuted, LIGHT_TOKENS.bgPrimary)).toBeGreaterThan(4.5);
+    expect(getContrastRatio(LIGHT_TOKENS.textMuted, LIGHT_TOKENS.bgSecondary)).toBeGreaterThan(4.5);
+    expect(getContrastRatio(DARK_TOKENS.textMuted, DARK_TOKENS.bgPrimary)).toBeGreaterThan(4.5);
+    expect(getContrastRatio(DARK_TOKENS.textMuted, DARK_TOKENS.bgSecondary)).toBeGreaterThan(4.5);
+  });
+
+  it('guarantees WCAG AA readable contrast for error alerts in both modes', () => {
+    expect(getContrastRatio(LIGHT_TOKENS.statusError, LIGHT_TOKENS.bgError)).toBeGreaterThan(4.5);
+    expect(getContrastRatio(DARK_TOKENS.statusError, DARK_TOKENS.bgError)).toBeGreaterThan(4.5);
   });
 
   it('guarantees WCAG AA contrast for given digits on elevated background in both modes', () => {

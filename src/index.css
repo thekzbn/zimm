@@ -1,8 +1,60 @@
+/* ─────────────────────────────────────────
+   Zimm global styles
+   numb palette · Inter · flat 1px design
+   ───────────────────────────────────────── */
+
 :root {
+  /* Constrained 4-step prose scale + 2 board-functional sizes */
+  --text-xs:         0.75rem;   /* metadata, labels, shortcuts */
+  --text-sm:         0.875rem;  /* body, buttons, helper copy */
+  --text-base:       1rem;      /* stats, subheadings, prominent body */
+  --text-lg:         1.25rem;   /* view and modal headings */
+  --text-digit:      1.5rem;    /* board cell digits */
+  --text-digit-note: 0.625rem;  /* pencil note candidates */
+
+  --lh-tight:  1.15;
+  --lh-normal: 1.45;
+  --lh-loose:  1.6;
+
+  --ease-snap: cubic-bezier(0.57, -0.01, 0.21, 0.89);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  /* Fallbacks before ThemeProvider hydrates CSS variables */
+  --color-bgPrimary:    #fbf8f7;
+  --color-bgSecondary:  #f3ece8;
+  --color-bgElevated:   #ffffff;
+  --color-bgSelected:   #fadcdb;
+  --color-bgHighlight:  #fdeeed;
+  --color-bgPeer:       #faecea;
+  --color-bgError:      #ffebee;
+  --color-textPrimary:  #211914;
+  --color-textSecondary:#4a1815;
+  --color-textMuted:    #5e423e;
+  --color-borderSubtle: #dfd2cd;
+  --color-borderStrong: #4a1815;
+  --color-borderAccent: #821917;
+  --color-borderFocus:  #a61b19;
+  --color-brandPrimary: #821917;
+  --color-brandHover:   #a61b19;
+  --color-statusSuccess:#2e7d32;
+  --color-statusWarning:#b34100;
+  --color-statusError:  #821917;
+
   font-family: Inter, sans-serif;
   font-feature-settings: 'liga' 1, 'calt' 1;
-  line-height: 1.5;
+  line-height: var(--lh-normal);
   font-weight: 400;
+  font-size: 16px;
   color-scheme: light dark;
 }
 
@@ -22,10 +74,13 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-bgPrimary);
+  color: var(--color-textPrimary);
 }
 
 button {
   font-family: inherit;
+  cursor: pointer;
 }
 
 input {
@@ -34,71 +89,613 @@ input {
 
 button:focus-visible,
 input:focus-visible,
-a:focus-visible {
-  outline: 2px solid #a61b19;
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-borderFocus);
   outline-offset: 2px;
 }
 
-.zimm-main {
-  flex: 1;
-  padding: 0.75rem 1rem 1.25rem;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── App Shell ────────────────────────────── */
+
+.zimm-app {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: var(--color-bgPrimary);
+  color: var(--color-textPrimary);
+}
+
+/* ─── Header ───────────────────────────────── */
+
+.zimm-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-borderSubtle);
+  background-color: var(--color-bgElevated);
+  flex-shrink: 0;
+}
+
+.zimm-header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.zimm-header__mark {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-brandPrimary);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  font-weight: 800;
+  font-size: var(--text-base);
+  letter-spacing: -0.03em;
+  flex-shrink: 0;
+}
+
+.zimm-header__wordmark {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-textPrimary);
+  line-height: var(--lh-tight);
+}
+
+.zimm-header__rating {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-textMuted);
+  font-variant-numeric: tabular-nums;
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--color-borderSubtle);
+}
+
+.zimm-header__rating strong {
+  color: var(--color-textPrimary);
+  font-weight: 700;
+}
+
+/* Primary Mode Navigation */
+.zimm-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.zimm-nav__tab {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-textMuted);
+  transition: background-color 0.15s var(--ease-snap),
+              border-color 0.15s var(--ease-snap),
+              color 0.15s var(--ease-snap);
+  white-space: nowrap;
+}
+
+.zimm-nav__tab:hover {
+  color: var(--color-textPrimary);
+  background-color: var(--color-bgSecondary);
+}
+
+.zimm-nav__tab[aria-current="page"] {
+  background-color: var(--color-brandPrimary);
+  color: #ffffff;
+  border-color: var(--color-brandPrimary);
+  font-weight: 600;
+}
+
+/* Quiet Utility Controls */
+.zimm-header__utils {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.zimm-btn-util {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: 1px solid var(--color-borderSubtle);
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--color-textMuted);
+  transition: color 0.15s var(--ease-snap),
+              border-color 0.15s var(--ease-snap);
+  white-space: nowrap;
+}
+
+.zimm-btn-util:hover {
+  color: var(--color-textPrimary);
+  border-color: var(--color-borderStrong);
+}
+
+@media (max-width: 780px) {
+  .zimm-header {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .zimm-nav {
+    order: 3;
+    width: 100%;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-borderSubtle);
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+}
+
+/* ─── Main Workspace ───────────────────────── */
+
+.zimm-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .zimm-workspace {
+  flex: 1;
   width: 100%;
-  max-width: 820px;
+  max-width: 960px;
   margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: var(--space-5);
   align-items: start;
-  justify-items: center;
-}
-
-.zimm-board-column {
-  width: 100%;
-  max-width: min(94vw, 440px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.zimm-controls-column {
-  width: 100%;
-  max-width: min(94vw, 440px);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.zimm-digits-grid {
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 0.35rem;
 }
 
 @media (min-width: 820px) {
   .zimm-workspace {
-    grid-template-columns: minmax(320px, 430px) minmax(270px, 340px);
-    gap: 1.5rem;
-    align-items: start;
+    grid-template-columns: minmax(320px, 468px) 300px;
     justify-content: center;
-    justify-items: stretch;
+    gap: var(--space-8);
+    padding: var(--space-6) var(--space-5);
+  }
+}
+
+/* ─── Board Column ─────────────────────────── */
+
+.zimm-board-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  width: 100%;
+}
+
+/* Top bar above board: difficulty tabs + stats (sudoku.com style) */
+.zimm-board-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.zimm-difficulty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.zimm-difficulty__btn {
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-textMuted);
+  transition: color 0.15s var(--ease-snap),
+              border-color 0.15s var(--ease-snap);
+}
+
+.zimm-difficulty__btn:hover {
+  color: var(--color-textPrimary);
+}
+
+.zimm-difficulty__btn[aria-pressed="true"] {
+  color: var(--color-brandPrimary);
+  border-bottom-color: var(--color-brandPrimary);
+  font-weight: 600;
+}
+
+.zimm-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.zimm-stat {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.zimm-stat__label {
+  font-size: var(--text-xs);
+  color: var(--color-textMuted);
+  font-weight: 500;
+}
+
+.zimm-stat__value {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-textPrimary);
+  font-variant-numeric: tabular-nums;
+}
+
+.zimm-stat__value--error {
+  color: var(--color-statusError);
+}
+
+/* Grid container reserves exact 1:1 space */
+.zimm-grid-wrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 468px;
+}
+
+/* ─── Controls Column ──────────────────────── */
+
+.zimm-controls-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  width: 100%;
+}
+
+.zimm-mode-header {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-borderSubtle);
+}
+
+.zimm-mode-header__title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-textPrimary);
+  line-height: var(--lh-tight);
+}
+
+.zimm-mode-header__desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-textMuted);
+  line-height: var(--lh-normal);
+  max-width: 60ch;
+}
+
+/* ─── Keypad (sudoku.com 3x3 + action row) ── */
+
+.zimm-keypad {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.zimm-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.zimm-toolbar--no-hint {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.zimm-tool-btn {
+  min-height: 44px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border: 1px solid var(--color-borderSubtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bgElevated);
+  color: var(--color-textPrimary);
+  transition: background-color 0.15s var(--ease-snap),
+              border-color 0.15s var(--ease-snap),
+              color 0.15s var(--ease-snap);
+}
+
+.zimm-tool-btn:hover:not(:disabled) {
+  border-color: var(--color-borderStrong);
+  background-color: var(--color-bgSecondary);
+}
+
+.zimm-tool-btn[aria-pressed="true"] {
+  background-color: var(--color-brandPrimary);
+  border-color: var(--color-brandPrimary);
+  color: #ffffff;
+}
+
+.zimm-tool-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.zimm-tool-btn__sub {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 3x3 Digit Pad */
+.zimm-digits {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+}
+
+.zimm-digit-btn {
+  min-height: 54px;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  border: 1px solid var(--color-borderSubtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bgElevated);
+  color: var(--color-brandPrimary);
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.15s var(--ease-snap),
+              border-color 0.15s var(--ease-snap);
+}
+
+.zimm-digit-btn--notes {
+  color: var(--color-textMuted);
+}
+
+.zimm-digit-btn:hover:not(:disabled) {
+  background-color: var(--color-bgSecondary);
+  border-color: var(--color-brandPrimary);
+}
+
+/* Primary & Secondary Buttons */
+.zimm-btn-primary {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: var(--color-brandPrimary);
+  color: #ffffff;
+  transition: background-color 0.15s var(--ease-snap);
+}
+
+.zimm-btn-primary:hover:not(:disabled) {
+  background-color: var(--color-brandHover);
+}
+
+.zimm-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.zimm-btn-secondary {
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border: 1px solid var(--color-borderSubtle);
+  border-radius: var(--radius-md);
+  background-color: transparent;
+  color: var(--color-textPrimary);
+  transition: border-color 0.15s var(--ease-snap),
+              background-color 0.15s var(--ease-snap);
+}
+
+.zimm-btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-borderStrong);
+  background-color: var(--color-bgSecondary);
+}
+
+.zimm-help {
+  min-height: 2.5rem;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-textMuted);
+  line-height: var(--lh-normal);
+}
+
+/* ─── Centered Lobby / Setup View ──────────── */
+
+.zimm-lobby {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.zimm-lobby__section {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-borderSubtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.zimm-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-borderSubtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bgElevated);
+  color: var(--color-textPrimary);
+}
+
+/* ─── Progress & Pips ──────────────────────── */
+
+.zimm-progress-track {
+  height: 6px;
+  border-radius: 3px;
+  background-color: var(--color-borderSubtle);
+  overflow: hidden;
+}
+
+.zimm-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background-color: var(--color-brandPrimary);
+  transition: width 0.3s var(--ease-snap);
+}
+
+.zimm-hint-pips {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.zimm-hint-pip {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  transition: background-color 0.2s var(--ease-snap);
+}
+
+/* ─── Modals (flat 1px border, zero shadow) ── */
+
+.zimm-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(33, 25, 20, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  z-index: 100;
+}
+
+.zimm-modal {
+  background-color: var(--color-bgElevated);
+  border: 1px solid var(--color-borderSubtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.zimm-modal--sm { max-width: 380px; }
+.zimm-modal--md { max-width: 480px; }
+.zimm-modal--lg { max-width: 620px; max-height: 88vh; overflow-y: auto; }
+
+.zimm-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.zimm-modal__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-textPrimary);
+  line-height: var(--lh-tight);
+}
+
+.zimm-modal__close {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border: 1px solid var(--color-borderSubtle);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-textMuted);
+  transition: color 0.15s var(--ease-snap), border-color 0.15s var(--ease-snap);
+}
+
+.zimm-modal__close:hover {
+  color: var(--color-textPrimary);
+  border-color: var(--color-borderStrong);
+}
+
+.zimm-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-borderSubtle);
+}
+
+/* ─── Alerts & Empty / Error States ────────── */
+
+.zimm-alert {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: var(--lh-normal);
+  border-left: 3px solid var(--color-brandPrimary);
+  background-color: var(--color-bgError);
+  color: var(--color-statusError);
+}
+
+.zimm-error-boundary {
+  max-width: 440px;
+  margin: var(--space-8) auto;
+  padding: var(--space-5);
+  border: 1px solid var(--color-borderSubtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.zimm-code {
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+  font-size: var(--text-lg);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--color-brandPrimary);
+}
+
+@media (max-width: 480px) {
+  .zimm-workspace {
+    padding: var(--space-3);
   }
 
-  .zimm-board-column {
-    max-width: 430px;
-  }
-
-  .zimm-controls-column {
-    max-width: 340px;
-  }
-
-  .zimm-digits-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.45rem;
+  .zimm-digit-btn {
+    min-height: 48px;
   }
 }

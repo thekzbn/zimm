@@ -32,9 +32,10 @@ export const PencilNotesDisplay: React.FC<PencilNotesDisplayProps> = ({ notes })
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '0.62rem',
+              fontSize: 'var(--text-digit-note)',
               fontWeight: 600,
               color: hasNote ? tokens.digitNote : 'transparent',
+              fontVariantNumeric: 'tabular-nums',
               lineHeight: 1,
             }}
           >

@@ -13,20 +13,25 @@ import { createStagedHint } from '../timely/hintStager';
 import { solveLogically } from '../timely/logicalSolver';
 import { generatePuzzle } from '../timely/pipeline';
 import { CellCoord, DifficultyTier, Digit, GeneratedPuzzle, StagedHint } from '../timely/types';
-import { useTheme } from '../theme/themeContext';
 import { HintModal } from './HintModal';
 import { Keypad } from './Keypad';
 import { MatchResultModal } from './MatchResultModal';
 import { MatchTimer } from './MatchTimer';
 import { SudokuGrid } from './SudokuGrid';
 
+function cloneBoard(matrix: BoardMatrix): BoardMatrix {
+  return matrix.map((row) =>
+    row.map((cell) => ({ ...cell, notes: new Set(cell.notes) }))
+  );
+}
+
 export const SoloGameView: React.FC = () => {
-  const { tokens } = useTheme();
   const { t } = useI18n();
 
   const [tier, setTier] = useState<DifficultyTier>('intermediate');
   const [puzzle, setPuzzle] = useState<GeneratedPuzzle | null>(null);
   const [board, setBoard] = useState<BoardMatrix>([]);
+  const [history, setHistory] = useState<BoardMatrix[]>([]);
   const [selectedCell, setSelectedCell] = useState<CellCoord | null>(null);
   const [inputMode, setInputMode] = useState<InputMode>('value');
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
@@ -37,13 +42,14 @@ export const SoloGameView: React.FC = () => {
   const [hintStage, setHintStage] = useState<1 | 2 | 3>(1);
   const [showResult, setShowResult] = useState<boolean>(false);
 
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const matchIdRef = useRef<string>(`solo_${Date.now()}`);
 
   const startNewGame = useCallback((selectedTier: DifficultyTier) => {
     const newPuzzle = generatePuzzle(selectedTier);
     setPuzzle(newPuzzle);
     setBoard(initializeBoard(newPuzzle.initialGrid));
+    setHistory([]);
     setSelectedCell(null);
     setInputMode('value');
     setElapsedSeconds(0);
@@ -61,7 +67,6 @@ export const SoloGameView: React.FC = () => {
     startNewGame(tier);
   }, [tier, startNewGame]);
 
-  // Timer interval
   useEffect(() => {
     if (isActive) {
       timerRef.current = setInterval(() => {
@@ -69,70 +74,83 @@ export const SoloGameView: React.FC = () => {
       }, 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isActive]);
 
-  const handleCellSelect = (r: number, c: number) => {
+  const handleCellSelect = useCallback((r: number, c: number) => {
     setSelectedCell({ row: r, col: c });
-  };
+  }, []);
 
-  const handleDigitInput = (digit: Digit) => {
-    if (!selectedCell || !puzzle || !isActive) return;
-    const { row, col } = selectedCell;
-    const cell = board[row][col];
-    if (cell.isGiven) return;
+  const handleUndo = useCallback(() => {
+    if (!isActive || history.length === 0) return;
+    const previous = history[history.length - 1];
+    setHistory((prev) => prev.slice(0, -1));
+    setBoard(previous);
+  }, [isActive, history]);
 
-    if (inputMode === 'notes') {
-      // Toggle scratch note
-      setBoard((prev) => toggleCellNote(prev, row, col, digit));
-      eventRecorder.recordEvent(matchIdRef.current, 'solo_player', 'note_toggled', {
-        cell: selectedCell,
-        digit,
-      });
-      return;
-    }
+  const handleDigitInput = useCallback(
+    (digit: Digit) => {
+      if (!selectedCell || !puzzle || !isActive) return;
+      const { row, col } = selectedCell;
+      const cell = board[row][col];
+      if (cell.isGiven) return;
 
-    // Place value
-    const isCorrect = puzzle.solutionGrid[row][col] === digit;
-    const updatedBoard = commitDigitToBoard(board, row, col, digit, isCorrect);
-    setBoard(updatedBoard);
+      setHistory((prev) => [...prev, cloneBoard(board)]);
 
-    if (isCorrect) {
-      eventRecorder.recordEvent(matchIdRef.current, 'solo_player', 'digit_placed', {
-        cell: selectedCell,
-        digit,
-      });
-
-      // Check win
-      if (isBoardCompleted(updatedBoard, puzzle.solutionGrid)) {
-        setIsActive(false);
-        setShowResult(true);
-        eventRecorder.recordEvent(matchIdRef.current, 'solo_player', 'puzzle_completed');
+      if (inputMode === 'notes') {
+        setBoard((prev) => toggleCellNote(prev, row, col, digit));
+        eventRecorder.recordEvent(matchIdRef.current, 'solo_player', 'note_toggled', {
+          cell: selectedCell,
+          digit,
+        });
+        return;
       }
-    } else {
-      setMistakes((m) => m + 1);
-      eventRecorder.recordEvent(matchIdRef.current, 'solo_player', 'mistake_incurred', {
-        cell: selectedCell,
-        digit,
-      });
-    }
-  };
 
-  const handleErase = () => {
+      const isCorrect = puzzle.solutionGrid[row][col] === digit;
+      const updatedBoard = commitDigitToBoard(board, row, col, digit, isCorrect);
+      setBoard(updatedBoard);
+
+      if (isCorrect) {
+        eventRecorder.recordEvent(matchIdRef.current, 'solo_player', 'digit_placed', {
+          cell: selectedCell,
+          digit,
+        });
+
+        if (isBoardCompleted(updatedBoard, puzzle.solutionGrid)) {
+          setIsActive(false);
+          setShowResult(true);
+          eventRecorder.recordEvent(matchIdRef.current, 'solo_player', 'puzzle_completed');
+        }
+      } else {
+        setMistakes((m) => m + 1);
+        eventRecorder.recordEvent(matchIdRef.current, 'solo_player', 'mistake_incurred', {
+          cell: selectedCell,
+          digit,
+        });
+      }
+    },
+    [selectedCell, puzzle, isActive, board, inputMode]
+  );
+
+  const handleErase = useCallback(() => {
     if (!selectedCell || !isActive) return;
+    const cell = board[selectedCell.row][selectedCell.col];
+    if (cell.isGiven || (cell.value === 0 && cell.notes.size === 0)) return;
+
+    setHistory((prev) => [...prev, cloneBoard(board)]);
     setBoard((prev) => eraseCellFromBoard(prev, selectedCell.row, selectedCell.col));
     eventRecorder.recordEvent(matchIdRef.current, 'solo_player', 'digit_erased', {
       cell: selectedCell,
     });
-  };
+  }, [selectedCell, isActive, board]);
 
-  const handleRequestHint = () => {
+  const handleRequestHint = useCallback(() => {
     if (!puzzle || !isActive || hintsUsed >= 3) return;
 
-    // Current grid representation
     const currentGrid = board.map((r) => r.map((c) => c.value));
     const validation = solveLogically(currentGrid, tier);
     const nextDeduction = validation.deductionLog[0];
@@ -149,141 +167,64 @@ export const SoloGameView: React.FC = () => {
         hintStage: 1,
       });
     }
-  };
+  }, [puzzle, isActive, hintsUsed, board, tier]);
 
   const handleAdvanceHintStage = () => {
-    if (!currentHint) return;
-    const nextStage = (hintStage + 1) as 2 | 3;
-    setHintStage(nextStage);
-    const updated = {
-      ...currentHint,
-      stage: nextStage,
-      message:
-        nextStage === 2
-          ? {
-              en: `Look for an applicable logical deduction around this cell.`,
-              yo: `Wá ìgbésẹ̀ ìṣirò tó bá a mu ní àkópọ̀ yìí.`,
-            }
-          : {
-              en: `Focus cell solution is deduced. Place value carefully.`,
-              yo: `A ti rí nọ́ḿbà tó tọ́. Kọ ọ́ síbẹ̀ pẹ̀lú ìṣọ́ra.`,
-            },
-    };
-    setCurrentHint(updated);
+    if (!currentHint || hintStage >= 3) return;
+    setHintStage((s) => (s + 1) as 2 | 3);
   };
 
   return (
     <div className="zimm-workspace">
-      {/* Left Column: Board & Match Status */}
-      <div className="zimm-board-column">
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            marginBottom: '0.55rem',
-            gap: '0.5rem',
-          }}
-        >
-          <MatchTimer seconds={elapsedSeconds} label={t.common.time} />
-          <div
-            style={{
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              color: mistakes > 0 ? tokens.statusError : tokens.textMuted,
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            {t.game.mistakes}: {mistakes}
-          </div>
-          <button
-            type="button"
-            onClick={() => startNewGame(tier)}
-            style={{
-              padding: '0.35rem 0.7rem',
-              borderRadius: '6px',
-              border: `1px solid ${tokens.borderSubtle}`,
-              backgroundColor: tokens.bgSecondary,
-              color: tokens.textPrimary,
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            {t.game.newPuzzle}
-          </button>
-        </div>
-
-        {board.length > 0 && (
-          <SudokuGrid
-            board={board}
-            selectedCell={selectedCell}
-            onSelectCell={handleCellSelect}
-            onDigitInput={handleDigitInput}
-            onErase={handleErase}
-            onToggleNotesMode={() => setInputMode((m) => (m === 'value' ? 'notes' : 'value'))}
-            onRequestHint={handleRequestHint}
-          />
-        )}
-      </div>
-
-      {/* Right Column: Mode Info, Difficulty & Keypad */}
-      <div className="zimm-controls-column">
-        <div
-          style={{
-            backgroundColor: tokens.bgElevated,
-            border: `1px solid ${tokens.borderSubtle}`,
-            borderRadius: '8px',
-            padding: '0.85rem 1rem',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: tokens.textPrimary }}>
-              {t.modes.soloTitle}
-            </h2>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: tokens.textMuted }}>
-              {t.modes.soloBadge}
-            </span>
-          </div>
-          <p style={{ margin: '0.25rem 0 0.75rem', fontSize: '0.82rem', color: tokens.textMuted, lineHeight: 1.4 }}>
-            {t.modes.soloSubtitle}
-          </p>
-
-          {/* Difficulty selector */}
-          <div
-            role="group"
-            aria-label={t.common.difficulty}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '0.25rem',
-              backgroundColor: tokens.bgSecondary,
-              padding: '0.25rem',
-              borderRadius: '6px',
-            }}
-          >
+      {/* Left Column: Inline Difficulty Tabs + Stats + 9x9 Grid */}
+      <div className="zimm-board-col">
+        <div className="zimm-board-meta">
+          <div className="zimm-difficulty" role="group" aria-label={t.common.difficulty}>
             {(['beginner', 'intermediate', 'advanced', 'expert'] as DifficultyTier[]).map((d) => (
               <button
                 key={d}
                 type="button"
+                className="zimm-difficulty__btn"
                 onClick={() => setTier(d)}
                 aria-pressed={tier === d}
-                style={{
-                  padding: '0.35rem 0.25rem',
-                  borderRadius: '4px',
-                  border: tier === d ? `1px solid ${tokens.borderAccent}` : 'none',
-                  backgroundColor: tier === d ? tokens.bgElevated : 'transparent',
-                  color: tier === d ? tokens.brandPrimary : tokens.textPrimary,
-                  fontWeight: tier === d ? 700 : 500,
-                  fontSize: '0.76rem',
-                  cursor: 'pointer',
-                }}
               >
                 {t.difficulties[d]}
               </button>
             ))}
           </div>
+
+          <div className="zimm-stats">
+            <div className="zimm-stat">
+              <span className="zimm-stat__label">{t.game.mistakes}</span>
+              <span className={`zimm-stat__value ${mistakes > 0 ? 'zimm-stat__value--error' : ''}`}>
+                {mistakes}
+              </span>
+            </div>
+            <MatchTimer seconds={elapsedSeconds} />
+          </div>
+        </div>
+
+        <div className="zimm-grid-wrap">
+          {board.length > 0 && (
+            <SudokuGrid
+              board={board}
+              selectedCell={selectedCell}
+              onSelectCell={handleCellSelect}
+              onDigitInput={handleDigitInput}
+              onErase={handleErase}
+              onUndo={handleUndo}
+              onToggleNotesMode={() => setInputMode((m) => (m === 'value' ? 'notes' : 'value'))}
+              onRequestHint={handleRequestHint}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Right Column: Mode Context + 3x3 Keypad + Primary Action */}
+      <div className="zimm-controls-col">
+        <div className="zimm-mode-header">
+          <h2 className="zimm-mode-header__title">{t.modes.soloTitle}</h2>
+          <p className="zimm-mode-header__desc">{t.modes.soloSubtitle}</p>
         </div>
 
         <Keypad
@@ -291,13 +232,16 @@ export const SoloGameView: React.FC = () => {
           onToggleInputMode={() => setInputMode((m) => (m === 'value' ? 'notes' : 'value'))}
           onDigitClick={handleDigitInput}
           onEraseClick={handleErase}
+          onUndoClick={handleUndo}
+          canUndo={history.length > 0 && isActive}
           onHintClick={handleRequestHint}
           hintsRemaining={3 - hintsUsed}
           maxHints={3}
+          onPrimaryAction={() => startNewGame(tier)}
+          primaryActionLabel={t.game.newPuzzle}
         />
       </div>
 
-      {/* Hint Modal */}
       <HintModal
         hint={currentHint}
         currentStage={hintStage}
@@ -306,7 +250,6 @@ export const SoloGameView: React.FC = () => {
         hintsRemaining={3 - hintsUsed}
       />
 
-      {/* Solo Match Result Modal */}
       {showResult && puzzle && (
         <MatchResultModal
           deltaA={{
@@ -322,10 +265,11 @@ export const SoloGameView: React.FC = () => {
               expectedBenchmarkSeconds: puzzle.expectedBenchmarkSeconds,
               mistakeMultiplier: 1 + mistakes * 0.05,
               hintMultiplier: 1 + hintsUsed * 0.15,
-              effectiveSolveTimeSeconds: elapsedSeconds * (1 + mistakes * 0.05) * (1 + hintsUsed * 0.15),
+              effectiveSolveTimeSeconds:
+                elapsedSeconds * (1 + mistakes * 0.05) * (1 + hintsUsed * 0.15),
               normalizedPerformance:
                 puzzle.expectedBenchmarkSeconds /
-                (elapsedSeconds * (1 + mistakes * 0.05) * (1 + hintsUsed * 0.15)),
+                Math.max(1, elapsedSeconds * (1 + mistakes * 0.05) * (1 + hintsUsed * 0.15)),
             },
           }}
           isHeadToHead={false}
