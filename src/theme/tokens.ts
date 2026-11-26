@@ -7,7 +7,7 @@
  *  - Tamarillo:   #a61b19
  *  - Zeus:        #211914
  *
- * Neutrals and functional accents are documented below.
+ * Neutrals and functional accents are documented in docs/THEME_AND_ACCESSIBILITY.md.
  */
 
 export const NUMB_BRAND = {
@@ -64,7 +64,7 @@ export const LIGHT_TOKENS: ColorTokens = {
 
   textPrimary: '#211914', // Zeus
   textSecondary: '#4a1815', // Brown Derby
-  textMuted: '#6d4c47',
+  textMuted: '#5e423e', // Warm muted brown, >= 4.5:1 on bgPrimary & bgSecondary
   textInverse: '#ffffff',
   textAccent: '#821917', // Falu Red
 
@@ -81,11 +81,11 @@ export const LIGHT_TOKENS: ColorTokens = {
   digitGiven: '#211914', // Zeus
   digitPlayer: '#821917', // Falu Red
   digitError: '#b71c1c',
-  digitNote: '#5f4640',
+  digitNote: '#5b403c',
 
   statusSuccess: '#2e7d32',
-  statusWarning: '#e65100',
-  statusError: '#a61b19',
+  statusWarning: '#b34100',
+  statusError: '#821917',
 };
 
 export const DARK_TOKENS: ColorTokens = {
@@ -121,5 +121,5 @@ export const DARK_TOKENS: ColorTokens = {
 
   statusSuccess: '#66bb6a',
   statusWarning: '#ffa726',
-  statusError: '#ff5252',
+  statusError: '#ff6b6b',
 };

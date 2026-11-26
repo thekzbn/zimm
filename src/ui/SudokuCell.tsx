@@ -8,6 +8,7 @@ interface SudokuCellProps {
   isSelected: boolean;
   isPeerOfSelected: boolean;
   isSameDigitAsSelected: boolean;
+  isUnitCompleted?: boolean;
   onClick: (row: number, col: number) => void;
 }
 
@@ -16,11 +17,11 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
   isSelected,
   isPeerOfSelected,
   isSameDigitAsSelected,
+  isUnitCompleted = false,
   onClick,
 }) => {
   const { tokens } = useTheme();
 
-  // Determine border styles for 3x3 block separation
   const borderRight = cell.col % 3 === 2 && cell.col !== 8
     ? `2px solid ${tokens.borderStrong}`
     : `1px solid ${tokens.borderSubtle}`;
@@ -28,7 +29,6 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
     ? `2px solid ${tokens.borderStrong}`
     : `1px solid ${tokens.borderSubtle}`;
 
-  // Background priority: error > hint target > selected > same digit > peer > base
   let backgroundColor = tokens.bgElevated;
   if (cell.isError) {
     backgroundColor = tokens.bgError;
@@ -42,7 +42,6 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
     backgroundColor = tokens.bgPeer;
   }
 
-  // Digit color
   let digitColor = tokens.digitPlayer;
   if (cell.isGiven) {
     digitColor = tokens.digitGiven;
@@ -57,9 +56,12 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
 
   return (
     <button
+      type="button"
       role="gridcell"
+      tabIndex={-1}
       aria-selected={isSelected}
       aria-label={ariaLabel}
+      className={isUnitCompleted ? 'zimm-cell--unit-complete' : undefined}
       onClick={() => onClick(cell.row, cell.col)}
       style={{
         position: 'relative',
@@ -67,8 +69,8 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
         aspectRatio: '1 / 1',
         backgroundColor,
         border: 'none',
-        borderRight,
-        borderBottom,
+        borderRight: cell.col === 8 ? 'none' : borderRight,
+        borderBottom: cell.row === 8 ? 'none' : borderBottom,
         padding: 0,
         margin: 0,
         display: 'flex',
@@ -79,16 +81,19 @@ export const SudokuCell: React.FC<SudokuCellProps> = React.memo(({
         outlineOffset: '-2px',
         zIndex: isSelected ? 2 : 1,
         transition: 'background-color 0.15s cubic-bezier(0.57, -0.01, 0.21, 0.89)',
+        animationDelay: isUnitCompleted ? `${((cell.row + cell.col) % 9) * 20}ms` : undefined,
       }}
     >
       {cell.value !== 0 ? (
         <span
           style={{
-            fontSize: '1.45rem',
+            fontSize: 'var(--text-digit)',
             fontWeight: cell.isGiven ? 700 : 600,
             color: digitColor,
             fontFamily: 'inherit',
+            fontVariantNumeric: 'tabular-nums',
             userSelect: 'none',
+            lineHeight: 1,
           }}
         >
           {cell.value}

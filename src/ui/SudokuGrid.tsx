@@ -8,9 +8,11 @@ import { SudokuCell } from './SudokuCell';
 interface SudokuGridProps {
   board: BoardMatrix;
   selectedCell: CellCoord | null;
+  completedUnitCells?: Set<string>;
   onSelectCell: (row: number, col: number) => void;
   onDigitInput: (digit: Digit) => void;
   onErase: () => void;
+  onUndo?: () => void;
   onToggleNotesMode: () => void;
   onRequestHint?: () => void;
 }
@@ -18,15 +20,16 @@ interface SudokuGridProps {
 export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
   board,
   selectedCell,
+  completedUnitCells,
   onSelectCell,
   onDigitInput,
   onErase,
+  onUndo,
   onToggleNotesMode,
   onRequestHint,
 }) => {
   const { tokens } = useTheme();
 
-  // Selected cell peers
   const peerKeys = React.useMemo(() => {
     if (!selectedCell) return new Set<string>();
     const peers = getPeers(selectedCell.row, selectedCell.col);
@@ -35,12 +38,12 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
 
   const selectedValue = selectedCell ? board[selectedCell.row][selectedCell.col].value : 0;
 
-  // Keep latest handlers in a ref so window keydown listener is bound once
   const latestRef = useRef({
     selectedCell,
     onSelectCell,
     onDigitInput,
     onErase,
+    onUndo,
     onToggleNotesMode,
     onRequestHint,
   });
@@ -49,6 +52,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     onSelectCell,
     onDigitInput,
     onErase,
+    onUndo,
     onToggleNotesMode,
     onRequestHint,
   };
@@ -67,9 +71,18 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
         onSelectCell: selectCell,
         onDigitInput: digitInput,
         onErase: erase,
+        onUndo: undo,
         onToggleNotesMode: toggleNotes,
         onRequestHint: requestHint,
       } = latestRef.current;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (undo) {
+          undo();
+          e.preventDefault();
+        }
+        return;
+      }
 
       if (!cell) {
         if (e.key.startsWith('Arrow')) {
@@ -109,6 +122,13 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
           toggleNotes();
           e.preventDefault();
           break;
+        case 'u':
+        case 'U':
+          if (undo) {
+            undo();
+            e.preventDefault();
+          }
+          break;
         case 'h':
         case 'H':
           if (requestHint) {
@@ -129,21 +149,27 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const handleGridFocus = () => {
+    if (!selectedCell) {
+      onSelectCell(0, 0);
+    }
+  };
+
   return (
     <div
       role="grid"
+      tabIndex={0}
       aria-label="Sudoku Board"
+      onFocus={handleGridFocus}
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(9, 1fr)',
-        maxWidth: '460px',
         width: '100%',
-        margin: '0 auto',
-        border: `3px solid ${tokens.borderStrong}`,
+        aspectRatio: '1 / 1',
+        border: `2px solid ${tokens.borderStrong}`,
         backgroundColor: tokens.bgElevated,
-        borderRadius: '6px',
+        borderRadius: '4px',
         overflow: 'hidden',
-
       }}
     >
       {board.map((rowArr, r) =>
@@ -151,6 +177,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
           const isSelected = selectedCell?.row === r && selectedCell?.col === c;
           const isPeer = peerKeys.has(`${r},${c}`);
           const isSameDigit = selectedValue !== 0 && cell.value === selectedValue;
+          const isUnitCompleted = completedUnitCells?.has(`${r},${c}`) ?? false;
 
           return (
             <SudokuCell
@@ -159,6 +186,7 @@ export const SudokuGrid: React.FC<SudokuGridProps> = React.memo(({
               isSelected={isSelected}
               isPeerOfSelected={isPeer}
               isSameDigitAsSelected={isSameDigit}
+              isUnitCompleted={isUnitCompleted}
               onClick={onSelectCell}
             />
           );

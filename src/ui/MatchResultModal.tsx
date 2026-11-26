@@ -2,6 +2,7 @@ import React from 'react';
 import { RatingDelta } from '../endgame/types';
 import { useI18n } from '../i18n/i18nContext';
 import { useTheme } from '../theme/themeContext';
+import { useModalFocusTrap } from './useModalFocusTrap';
 
 interface MatchResultModalProps {
   deltaA: RatingDelta;
@@ -19,6 +20,7 @@ export const MatchResultModal: React.FC<MatchResultModalProps> = ({
 }) => {
   const { tokens } = useTheme();
   const { t } = useI18n();
+  const dialogRef = useModalFocusTrap(true, onClose);
 
   const outcomeTitle =
     deltaA.outcome === 'win'
@@ -34,88 +36,77 @@ export const MatchResultModal: React.FC<MatchResultModalProps> = ({
       ? tokens.statusError
       : tokens.statusWarning;
 
+  const netDelta = deltaA.netDelta ?? 0;
+
   return (
     <div
       role="dialog"
       aria-modal="true"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(33, 25, 20, 0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        zIndex: 100,
+      aria-labelledby="result-modal-title"
+      className="zimm-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
-        style={{
-          backgroundColor: tokens.bgElevated,
-          borderRadius: '8px',
-          padding: '1.75rem',
-          maxWidth: '480px',
-          width: '100%',
-
-          border: `1px solid ${tokens.borderAccent}`,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.25rem',
-        }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: '1.8rem',
-              fontWeight: 800,
-              color: outcomeColor,
-              letterSpacing: '-0.02em',
-            }}
+      <div ref={dialogRef} className="zimm-modal zimm-modal--md" tabIndex={-1}>
+        <div className="zimm-modal__header">
+          <div>
+            <h2
+              id="result-modal-title"
+              className="zimm-modal__title"
+              style={{ color: outcomeColor }}
+            >
+              {outcomeTitle}
+            </h2>
+            <p className="zimm-mode-header__desc" style={{ marginTop: 'var(--space-1)' }}>
+              {t.result.matchSummary}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="zimm-modal__close"
+            onClick={onClose}
+            aria-label={t.common.close}
           >
-            {outcomeTitle}
-          </h2>
-          <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: tokens.textMuted }}>
-            {t.result.matchSummary}
-          </p>
+            {t.common.close}
+          </button>
         </div>
 
-        {/* Rating adjustment banner (for H2H) */}
         {isHeadToHead && (
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-around',
-              backgroundColor: tokens.bgSecondary,
-              padding: '0.85rem',
-              borderRadius: '6px',
-              border: `1px solid ${tokens.borderSubtle}`,
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 'var(--space-3)',
+              padding: 'var(--space-3) 0',
+              borderTop: `1px solid ${tokens.borderSubtle}`,
+              borderBottom: `1px solid ${tokens.borderSubtle}`,
             }}
           >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.75rem', color: tokens.textMuted }}>
+            <div>
+              <div style={{ fontSize: 'var(--text-xs)', color: tokens.textMuted }}>
                 {t.result.ratingChange}
               </div>
               <div
                 style={{
-                  fontSize: '1.35rem',
+                  fontSize: 'var(--text-lg)',
                   fontWeight: 700,
-                  color: deltaA.netDelta >= 0 ? tokens.statusSuccess : tokens.statusError,
+                  fontVariantNumeric: 'tabular-nums',
+                  color: netDelta >= 0 ? tokens.statusSuccess : tokens.statusError,
                 }}
               >
-                {deltaA.netDelta >= 0 ? `+${deltaA.netDelta}` : deltaA.netDelta}
+                {netDelta >= 0 ? `+${netDelta}` : netDelta}
               </div>
             </div>
-            <div style={{ height: '2rem', width: '1px', backgroundColor: tokens.borderSubtle }} />
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.75rem', color: tokens.textMuted }}>
+            <div>
+              <div style={{ fontSize: 'var(--text-xs)', color: tokens.textMuted }}>
                 {t.result.newRating}
               </div>
               <div
                 style={{
-                  fontSize: '1.35rem',
+                  fontSize: 'var(--text-lg)',
                   fontWeight: 700,
+                  fontVariantNumeric: 'tabular-nums',
                   color: tokens.brandPrimary,
                 }}
               >
@@ -125,56 +116,60 @@ export const MatchResultModal: React.FC<MatchResultModalProps> = ({
           </div>
         )}
 
-        {/* Difficulty-adjusted performance breakdown table */}
-        <div
-          style={{
-            backgroundColor: tokens.bgSecondary,
-            padding: '1rem',
-            borderRadius: '6px',
-            border: `1px solid ${tokens.borderSubtle}`,
-          }}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <div
             style={{
-              fontSize: '0.82rem',
+              fontSize: 'var(--text-sm)',
               fontWeight: 700,
               color: tokens.textPrimary,
-              marginBottom: '0.65rem',
             }}
           >
             {t.result.yourPerformance}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 'var(--space-2) var(--space-4)',
+            }}
+          >
             <div>
-              <span style={{ fontSize: '0.75rem', color: tokens.textMuted }}>
-                {t.result.solveTime}:
+              <span style={{ fontSize: 'var(--text-xs)', color: tokens.textMuted }}>
+                {t.result.solveTime}
               </span>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: tokens.textPrimary }}>
+              <div style={{ fontSize: 'var(--text-base)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                 {Math.round(deltaA.performance.rawSpeedSeconds)}s
               </div>
             </div>
             <div>
-              <span style={{ fontSize: '0.75rem', color: tokens.textMuted }}>
-                {t.result.expectedTime}:
+              <span style={{ fontSize: 'var(--text-xs)', color: tokens.textMuted }}>
+                {t.result.expectedTime}
               </span>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: tokens.textPrimary }}>
+              <div style={{ fontSize: 'var(--text-base)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                 {Math.round(deltaA.performance.expectedBenchmarkSeconds)}s
               </div>
             </div>
             <div>
-              <span style={{ fontSize: '0.75rem', color: tokens.textMuted }}>
-                {t.result.accuracyScore}:
+              <span style={{ fontSize: 'var(--text-xs)', color: tokens.textMuted }}>
+                {t.result.accuracyScore}
               </span>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: tokens.textPrimary }}>
+              <div style={{ fontSize: 'var(--text-base)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                 x{deltaA.performance.mistakeMultiplier.toFixed(2)}
               </div>
             </div>
             <div>
-              <span style={{ fontSize: '0.75rem', color: tokens.textMuted }}>
-                {t.result.hintPenalty}:
+              <span style={{ fontSize: 'var(--text-xs)', color: tokens.textMuted }}>
+                {t.result.hintPenalty}
               </span>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: tokens.statusWarning }}>
+              <div
+                style={{
+                  fontSize: 'var(--text-base)',
+                  fontWeight: 600,
+                  fontVariantNumeric: 'tabular-nums',
+                  color: tokens.statusWarning,
+                }}
+              >
                 x{deltaA.performance.hintMultiplier.toFixed(2)}
               </div>
             </div>
@@ -182,52 +177,39 @@ export const MatchResultModal: React.FC<MatchResultModalProps> = ({
 
           <div
             style={{
-              marginTop: '0.75rem',
-              paddingTop: '0.5rem',
+              marginTop: 'var(--space-2)',
+              paddingTop: 'var(--space-2)',
               borderTop: `1px solid ${tokens.borderSubtle}`,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
           >
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: tokens.textPrimary }}>
-              {t.result.netPerformance}:
+            <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: tokens.textPrimary }}>
+              {t.result.netPerformance}
             </span>
-            <span style={{ fontSize: '1rem', fontWeight: 800, color: tokens.brandPrimary }}>
+            <span
+              style={{
+                fontSize: 'var(--text-base)',
+                fontWeight: 800,
+                fontVariantNumeric: 'tabular-nums',
+                color: tokens.brandPrimary,
+              }}
+            >
               {deltaA.performance.normalizedPerformance.toFixed(3)}
             </span>
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '0.55rem 1rem',
-              borderRadius: '4px',
-              border: `1px solid ${tokens.borderSubtle}`,
-              backgroundColor: tokens.bgSecondary,
-              color: tokens.textPrimary,
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-            }}
-          >
+        <div className="zimm-modal__footer">
+          <button type="button" className="zimm-btn-secondary" onClick={onClose}>
             {t.common.close}
           </button>
           <button
+            type="button"
+            className="zimm-btn-primary"
+            style={{ width: 'auto' }}
             onClick={onPlayAgain}
-            style={{
-              padding: '0.55rem 1.25rem',
-              borderRadius: '4px',
-              backgroundColor: tokens.brandPrimary,
-              color: '#ffffff',
-              border: 'none',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-            }}
           >
             {t.result.playAgain}
           </button>

@@ -20,6 +20,7 @@ export interface Translations {
     unknown: string;
   };
   nav: {
+    home: string;
     solo: string;
     liveH2H: string;
     asyncH2H: string;
@@ -71,6 +72,13 @@ export interface Translations {
     asyncTitle: string;
     asyncBadge: string;
     asyncSubtitle: string;
+  };
+  landing: {
+    headline: string;
+    subtitle: string;
+    primaryCta: string;
+    secondaryAsync: string;
+    secondarySolo: string;
   };
   live: {
     waitingForOpponent: string;

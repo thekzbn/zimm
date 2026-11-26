@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useI18n } from '../i18n/i18nContext';
 import { StagedHint } from '../timely/types';
 import { useTheme } from '../theme/themeContext';
+import { useModalFocusTrap } from './useModalFocusTrap';
 
 interface HintModalProps {
   hint: StagedHint | null;
@@ -20,15 +21,7 @@ export const HintModal: React.FC<HintModalProps> = ({
 }) => {
   const { tokens } = useTheme();
   const { t, locale } = useI18n();
-
-  useEffect(() => {
-    if (!hint) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [hint, onClose]);
+  const dialogRef = useModalFocusTrap(Boolean(hint), onClose);
 
   if (!hint) return null;
 
@@ -36,109 +29,54 @@ export const HintModal: React.FC<HintModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="hint-modal-title"
+      className="zimm-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(33, 25, 20, 0.65)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        zIndex: 100,
-      }}
     >
-      <div
-        style={{
-          backgroundColor: tokens.bgElevated,
-          borderRadius: '8px',
-          padding: '1.5rem',
-          maxWidth: '440px',
-          width: '100%',
-
-          border: `1px solid ${tokens.borderAccent}`,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: '1.15rem',
-              fontWeight: 700,
-              color: tokens.textPrimary,
-            }}
-          >
+      <div ref={dialogRef} className="zimm-modal zimm-modal--md" tabIndex={-1}>
+        <div className="zimm-modal__header">
+          <h2 id="hint-modal-title" className="zimm-modal__title">
             {t.game.hint} ({hintsRemaining} {t.game.hintsRemaining})
           </h2>
           <button
+            type="button"
+            className="zimm-modal__close"
             onClick={onClose}
             aria-label={t.common.close}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.25rem',
-              color: tokens.textMuted,
-              cursor: 'pointer',
-              padding: '0.25rem',
-            }}
           >
-            ✕
+            {t.common.close}
           </button>
         </div>
 
-        {/* Meaningful Performance Cost Warning */}
-        <div
-          style={{
-            backgroundColor: tokens.bgError,
-            borderLeft: `4px solid ${tokens.brandPrimary}`,
-            padding: '0.65rem 0.85rem',
-            borderRadius: '4px',
-            fontSize: '0.8rem',
-            color: tokens.statusError,
-            lineHeight: 1.4,
-            fontWeight: 500,
-          }}
-        >
-          ⚠️ {t.game.hintCostWarning}
-        </div>
+        <div className="zimm-alert">{t.game.hintCostWarning}</div>
 
-        {/* Stage progress indicator */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+        <div className="zimm-hint-pips" aria-hidden="true">
           {[1, 2, 3].map((s) => (
             <div
               key={s}
+              className="zimm-hint-pip"
               style={{
-                flex: 1,
-                height: '4px',
-                borderRadius: '2px',
                 backgroundColor: s <= currentStage ? tokens.brandPrimary : tokens.borderSubtle,
               }}
             />
           ))}
         </div>
 
-        {/* Hint content */}
         <div
           style={{
-            backgroundColor: tokens.bgSecondary,
-            padding: '1rem',
-            borderRadius: '6px',
-            border: `1px solid ${tokens.borderSubtle}`,
+            padding: 'var(--space-3) 0',
+            borderTop: `1px solid ${tokens.borderSubtle}`,
+            borderBottom: `1px solid ${tokens.borderSubtle}`,
           }}
         >
           <div
             style={{
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
+              fontSize: 'var(--text-xs)',
               fontWeight: 700,
               color: tokens.brandPrimary,
-              marginBottom: '0.35rem',
+              marginBottom: 'var(--space-1)',
             }}
           >
             {currentStage === 1 && t.game.hintStageNudge}
@@ -148,8 +86,8 @@ export const HintModal: React.FC<HintModalProps> = ({
           <p
             style={{
               margin: 0,
-              fontSize: '0.92rem',
-              lineHeight: 1.5,
+              fontSize: 'var(--text-sm)',
+              lineHeight: 'var(--lh-normal)',
               color: tokens.textPrimary,
             }}
           >
@@ -157,37 +95,22 @@ export const HintModal: React.FC<HintModalProps> = ({
           </p>
         </div>
 
-        {/* Footer buttons */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+        <div className="zimm-modal__footer" style={{ borderTop: 'none', paddingTop: 0 }}>
           {currentStage < 3 ? (
             <button
+              type="button"
+              className="zimm-btn-primary"
+              style={{ width: 'auto' }}
               onClick={onAdvanceStage}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                backgroundColor: tokens.brandPrimary,
-                color: '#ffffff',
-                border: 'none',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-              }}
             >
               Next Stage ({currentStage + 1}/3)
             </button>
           ) : (
             <button
+              type="button"
+              className="zimm-btn-primary"
+              style={{ width: 'auto' }}
               onClick={onClose}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                backgroundColor: tokens.brandPrimary,
-                color: '#ffffff',
-                border: 'none',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-              }}
             >
               {t.common.close}
             </button>

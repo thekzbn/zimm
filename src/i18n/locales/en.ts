@@ -20,6 +20,7 @@ export const en: Translations = {
     unknown: 'Unknown',
   },
   nav: {
+    home: 'Home',
     solo: 'Solo Play',
     liveH2H: 'Live Match',
     asyncH2H: 'Async Challenge',
@@ -71,6 +72,13 @@ export const en: Translations = {
     asyncTitle: 'Async Challenge',
     asyncBadge: 'Rated',
     asyncSubtitle: 'Solve on your own schedule with a challenge code. Rating updates once both players finish.',
+  },
+  landing: {
+    headline: 'Competitive Sudoku, Scored Fairly',
+    subtitle: 'Play live head-to-head or asynchronous matches on calibrated puzzles. Results normalise your speed, accuracy, and hint usage against verified puzzle difficulty.',
+    primaryCta: 'Play Live Match',
+    secondaryAsync: 'Async Challenge',
+    secondarySolo: 'Solo Practice',
   },
   live: {
     waitingForOpponent: 'Waiting for an opponent to join...',

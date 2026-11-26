@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RatingDelta } from '../endgame/types';
 import { eventRecorder } from '../fairplay/eventRecorder';
 import {
@@ -16,15 +16,20 @@ import { AsyncChallenge } from '../server/types';
 import { createStagedHint } from '../timely/hintStager';
 import { solveLogically } from '../timely/logicalSolver';
 import { CellCoord, DifficultyTier, Digit, StagedHint } from '../timely/types';
-import { useTheme } from '../theme/themeContext';
 import { HintModal } from './HintModal';
 import { Keypad } from './Keypad';
 import { MatchResultModal } from './MatchResultModal';
 import { MatchTimer } from './MatchTimer';
 import { SudokuGrid } from './SudokuGrid';
+import { getCompletedUnitCells } from './unitCompletion';
+
+function cloneBoard(matrix: BoardMatrix): BoardMatrix {
+  return matrix.map((row) =>
+    row.map((cell) => ({ ...cell, notes: new Set(cell.notes) }))
+  );
+}
 
 export const AsyncMatchView: React.FC = () => {
-  const { tokens } = useTheme();
   const { t } = useI18n();
   const user = matchStore.getUserProfile();
 
@@ -32,6 +37,8 @@ export const AsyncMatchView: React.FC = () => {
   const [activeChallenge, setActiveChallenge] = useState<AsyncChallenge | null>(null);
   const [inputCode, setInputCode] = useState<string>('');
   const [board, setBoard] = useState<BoardMatrix>([]);
+  const [history, setHistory] = useState<BoardMatrix[]>([]);
+  const [completedUnitCells, setCompletedUnitCells] = useState<Set<string>>(new Set());
   const [selectedCell, setSelectedCell] = useState<CellCoord | null>(null);
   const [inputMode, setInputMode] = useState<InputMode>('value');
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
@@ -45,7 +52,7 @@ export const AsyncMatchView: React.FC = () => {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
 
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (isSolving) {
@@ -54,6 +61,7 @@ export const AsyncMatchView: React.FC = () => {
       }, 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -64,16 +72,14 @@ export const AsyncMatchView: React.FC = () => {
     const challenge = serverOrchestrator.createAsyncChallenge(user.id, user.rating, tier);
     setActiveChallenge(challenge);
     setIsOpponentRole(false);
-
-    // Initialize creator's puzzle
     setBoard(initializeBoard(challenge.puzzleA.initialGrid));
+    setHistory([]);
     setSelectedCell(null);
     setInputMode('value');
     setElapsedSeconds(0);
     setMistakes(0);
     setHintsUsed(0);
     setIsSolving(true);
-
     eventRecorder.recordEvent(challenge.code, user.id, 'puzzle_assigned');
   };
 
@@ -86,106 +92,135 @@ export const AsyncMatchView: React.FC = () => {
       return;
     }
     setJoinError(null);
-
     setActiveChallenge(challenge);
     setIsOpponentRole(true);
-
-    // Initialize opponent's puzzle
     setBoard(initializeBoard(challenge.puzzleB.initialGrid));
+    setHistory([]);
     setSelectedCell(null);
     setInputMode('value');
     setElapsedSeconds(0);
     setMistakes(0);
     setHintsUsed(0);
     setIsSolving(true);
-
     eventRecorder.recordEvent(challenge.code, user.id, 'puzzle_assigned');
   };
 
   const handleCopyCode = () => {
     if (activeChallenge) {
-      navigator.clipboard.writeText(activeChallenge.code);
+      navigator.clipboard?.writeText(activeChallenge.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const handleCellSelect = (r: number, c: number) => {
+  const handleCellSelect = useCallback((r: number, c: number) => {
     setSelectedCell({ row: r, col: c });
-  };
+  }, []);
 
-  const handleDigitInput = (digit: Digit) => {
-    if (!selectedCell || !activeChallenge || !isSolving) return;
-    const { row, col } = selectedCell;
-    const cell = board[row][col];
-    if (cell.isGiven) return;
+  const handleUndo = useCallback(() => {
+    if (!isSolving || history.length === 0) return;
+    const previous = history[history.length - 1];
+    setHistory((prev) => prev.slice(0, -1));
+    setBoard(previous);
+  }, [isSolving, history]);
 
-    if (inputMode === 'notes') {
-      setBoard((prev) => toggleCellNote(prev, row, col, digit));
-      eventRecorder.recordEvent(activeChallenge.code, user.id, 'note_toggled', {
-        cell: selectedCell,
-        digit,
-      });
-      return;
-    }
+  const handleDigitInput = useCallback(
+    (digit: Digit) => {
+      if (!selectedCell || !activeChallenge || !isSolving) return;
+      const { row, col } = selectedCell;
+      const cell = board[row][col];
+      if (cell.isGiven) return;
 
-    const targetPuzzle = isOpponentRole ? activeChallenge.puzzleB : activeChallenge.puzzleA;
-    const isCorrect = targetPuzzle.solutionGrid[row][col] === digit;
-    const updatedBoard = commitDigitToBoard(board, row, col, digit, isCorrect);
-    setBoard(updatedBoard);
+      setHistory((prev) => [...prev, cloneBoard(board)]);
 
-    if (isCorrect) {
-      eventRecorder.recordEvent(activeChallenge.code, user.id, 'digit_placed', {
-        cell: selectedCell,
-        digit,
-      });
+      if (inputMode === 'notes') {
+        setBoard((prev) => toggleCellNote(prev, row, col, digit));
+        eventRecorder.recordEvent(activeChallenge.code, user.id, 'note_toggled', {
+          cell: selectedCell,
+          digit,
+        });
+        return;
+      }
 
-      if (isBoardCompleted(updatedBoard, targetPuzzle.solutionGrid)) {
-        setIsSolving(false);
-        eventRecorder.recordEvent(activeChallenge.code, user.id, 'puzzle_completed');
+      const targetPuzzle = isOpponentRole ? activeChallenge.puzzleB : activeChallenge.puzzleA;
+      const isCorrect = targetPuzzle.solutionGrid[row][col] === digit;
+      const updatedBoard = commitDigitToBoard(board, row, col, digit, isCorrect);
+      setBoard(updatedBoard);
 
-        if (!isOpponentRole) {
-          // Creator finished
-          const updated = serverOrchestrator.submitCreatorSolve(
-            activeChallenge.code,
-            elapsedSeconds,
-            mistakes,
-            hintsUsed,
-            true
-          );
-          if (updated) setActiveChallenge(updated);
-        } else {
-          // Opponent finished, resolve match
-          const updated = serverOrchestrator.submitOpponentSolve(
-            activeChallenge.code,
-            user.id,
-            user.rating,
-            elapsedSeconds,
-            mistakes,
-            hintsUsed,
-            true
-          );
-          if (updated && updated.result) {
-            setActiveChallenge(updated);
-            setResultModalDelta(updated.result.opponentDelta);
+      if (isCorrect) {
+        eventRecorder.recordEvent(activeChallenge.code, user.id, 'digit_placed', {
+          cell: selectedCell,
+          digit,
+        });
+
+        const completed = getCompletedUnitCells(updatedBoard, row, col);
+        if (completed.size > 0) {
+          setCompletedUnitCells(completed);
+          setTimeout(() => setCompletedUnitCells(new Set()), 650);
+        }
+
+        if (isBoardCompleted(updatedBoard, targetPuzzle.solutionGrid)) {
+          setIsSolving(false);
+          eventRecorder.recordEvent(activeChallenge.code, user.id, 'puzzle_completed');
+
+          if (!isOpponentRole) {
+            const updated = serverOrchestrator.submitCreatorSolve(
+              activeChallenge.code,
+              elapsedSeconds,
+              mistakes,
+              hintsUsed,
+              true
+            );
+            if (updated) setActiveChallenge(updated);
+          } else {
+            const updated = serverOrchestrator.submitOpponentSolve(
+              activeChallenge.code,
+              user.id,
+              user.rating,
+              elapsedSeconds,
+              mistakes,
+              hintsUsed,
+              true
+            );
+            if (updated && updated.result) {
+              setActiveChallenge(updated);
+              setResultModalDelta(updated.result.opponentDelta);
+            }
           }
         }
+      } else {
+        setMistakes((m) => m + 1);
+        eventRecorder.recordEvent(activeChallenge.code, user.id, 'mistake_incurred', {
+          cell: selectedCell,
+          digit,
+        });
       }
-    } else {
-      setMistakes((m) => m + 1);
-      eventRecorder.recordEvent(activeChallenge.code, user.id, 'mistake_incurred', {
-        cell: selectedCell,
-        digit,
-      });
-    }
-  };
+    },
+    [
+      selectedCell,
+      activeChallenge,
+      isSolving,
+      board,
+      inputMode,
+      isOpponentRole,
+      user.id,
+      user.rating,
+      elapsedSeconds,
+      mistakes,
+      hintsUsed,
+    ]
+  );
 
-  const handleErase = () => {
+  const handleErase = useCallback(() => {
     if (!selectedCell || !isSolving) return;
-    setBoard((prev) => eraseCellFromBoard(prev, selectedCell.row, selectedCell.col));
-  };
+    const cell = board[selectedCell.row][selectedCell.col];
+    if (cell.isGiven || (cell.value === 0 && cell.notes.size === 0)) return;
 
-  const handleRequestHint = () => {
+    setHistory((prev) => [...prev, cloneBoard(board)]);
+    setBoard((prev) => eraseCellFromBoard(prev, selectedCell.row, selectedCell.col));
+  }, [selectedCell, isSolving, board]);
+
+  const handleRequestHint = useCallback(() => {
     if (!activeChallenge || hintsUsed >= 3 || !isSolving) return;
     const currentGrid = board.map((r) => r.map((c) => c.value));
     const targetPuzzle = isOpponentRole ? activeChallenge.puzzleB : activeChallenge.puzzleA;
@@ -199,175 +234,73 @@ export const AsyncMatchView: React.FC = () => {
       setCurrentHint(staged);
       setSelectedCell(nextDeduction.targetCell);
     }
-  };
+  }, [activeChallenge, hintsUsed, isSolving, board, isOpponentRole]);
 
   if (!activeChallenge) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '0.5rem',
-          maxWidth: '480px',
-          width: '100%',
-          margin: '0 auto',
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: tokens.bgElevated,
-            border: `1px solid ${tokens.borderSubtle}`,
-            borderRadius: '8px',
-            padding: '1.25rem',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.1rem',
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: tokens.textPrimary }}>
-                {t.modes.asyncTitle}
-              </h2>
-              <span
-                style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  padding: '0.1rem 0.45rem',
-                  borderRadius: '4px',
-                  backgroundColor: tokens.brandPrimary,
-                  color: '#ffffff',
-                }}
+      <div className="zimm-lobby">
+        <div className="zimm-mode-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+          <h2 className="zimm-mode-header__title">{t.modes.asyncTitle}</h2>
+          <p className="zimm-mode-header__desc">{t.modes.asyncSubtitle}</p>
+        </div>
+
+        <div className="zimm-lobby__section">
+          <div className="zimm-difficulty" role="group" aria-label={t.common.difficulty}>
+            {(['beginner', 'intermediate', 'advanced', 'expert'] as DifficultyTier[]).map((d) => (
+              <button
+                key={d}
+                type="button"
+                className="zimm-difficulty__btn"
+                onClick={() => setTier(d)}
+                aria-pressed={tier === d}
               >
-                {t.modes.asyncBadge}
-              </span>
-            </div>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.84rem', color: tokens.textMuted, lineHeight: 1.4 }}>
-              {t.modes.asyncSubtitle}
-            </p>
+                {t.difficulties[d]}
+              </button>
+            ))}
           </div>
 
-          {/* Create section */}
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.98rem', color: tokens.textPrimary }}>
-              {t.async.createChallenge}
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem', marginBottom: '0.75rem' }}>
-              {(['beginner', 'intermediate', 'advanced', 'expert'] as DifficultyTier[]).map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setTier(d)}
-                  aria-pressed={tier === d}
-                  style={{
-                    padding: '0.35rem 0.25rem',
-                    borderRadius: '4px',
-                    border: `1px solid ${tier === d ? tokens.borderAccent : tokens.borderSubtle}`,
-                    backgroundColor: tier === d ? tokens.bgSelected : tokens.bgSecondary,
-                    color: tier === d ? tokens.brandPrimary : tokens.textPrimary,
-                    fontSize: '0.76rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {t.difficulties[d]}
-                </button>
-              ))}
-            </div>
+          <button
+            type="button"
+            className="zimm-btn-primary"
+            onClick={handleCreateChallenge}
+          >
+            {t.async.createChallenge}
+          </button>
+        </div>
+
+        <div className="zimm-lobby__section">
+          <label
+            htmlFor="async-code-input"
+            style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-textMuted)' }}
+          >
+            {t.async.joinChallenge}
+          </label>
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+            <input
+              id="async-code-input"
+              type="text"
+              className="zimm-input"
+              value={inputCode}
+              onChange={(e) => {
+                setInputCode(e.target.value);
+                if (joinError) setJoinError(null);
+              }}
+              placeholder={t.async.enterCode}
+              style={{ flex: 1, textTransform: 'uppercase', letterSpacing: '0.08em' }}
+            />
             <button
               type="button"
-              onClick={handleCreateChallenge}
-              style={{
-                width: '100%',
-                padding: '0.65rem',
-                borderRadius: '6px',
-                backgroundColor: tokens.brandPrimary,
-                color: '#ffffff',
-                border: 'none',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-              }}
+              className="zimm-btn-secondary"
+              onClick={handleJoinChallenge}
             >
-              {t.async.createChallenge}
+              {t.async.joinChallenge}
             </button>
           </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: tokens.textMuted,
-              fontSize: '0.78rem',
-            }}
-          >
-            <div style={{ flex: 1, height: '1px', backgroundColor: tokens.borderSubtle }} />
-            <span>OR</span>
-            <div style={{ flex: 1, height: '1px', backgroundColor: tokens.borderSubtle }} />
-          </div>
-
-          {/* Join section */}
-          <div>
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '0.98rem', color: tokens.textPrimary }}>
-              {t.async.joinChallenge}
-            </h3>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input
-                type="text"
-                aria-label={t.async.enterCode}
-                placeholder={t.async.enterCode}
-                value={inputCode}
-                maxLength={6}
-                onChange={(e) => { setInputCode(e.target.value.toUpperCase()); setJoinError(null); }}
-                style={{
-                  flex: 1,
-                  padding: '0.55rem 0.75rem',
-                  borderRadius: '4px',
-                  border: `1px solid ${tokens.borderSubtle}`,
-                  backgroundColor: tokens.bgSecondary,
-                  color: tokens.textPrimary,
-                  fontSize: '0.9rem',
-                  fontFamily: 'monospace',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                }}
-              />
-              <button
-                type="button"
-                onClick={handleJoinChallenge}
-                disabled={inputCode.trim().length !== 6}
-                style={{
-                  padding: '0.55rem 1rem',
-                  borderRadius: '4px',
-                  backgroundColor: tokens.brandPrimary,
-                  color: '#ffffff',
-                  border: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  cursor: inputCode.trim().length === 6 ? 'pointer' : 'not-allowed',
-                  opacity: inputCode.trim().length === 6 ? 1 : 0.6,
-                }}
-              >
-                {t.async.joinChallenge}
-              </button>
+          {joinError && (
+            <div className="zimm-alert" role="alert">
+              {joinError}
             </div>
-            {joinError && (
-              <p
-                role="alert"
-                style={{
-                  margin: '0.35rem 0 0',
-                  fontSize: '0.82rem',
-                  color: tokens.statusError,
-                  fontWeight: 500,
-                }}
-              >
-                {joinError}
-              </p>
-            )}
-          </div>
+          )}
         </div>
       </div>
     );
@@ -375,150 +308,94 @@ export const AsyncMatchView: React.FC = () => {
 
   return (
     <div className="zimm-workspace">
-      {/* Left Column: Status Bar & Board (or Waiting State) */}
-      <div className="zimm-board-column">
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            marginBottom: '0.55rem',
-            gap: '0.5rem',
-          }}
-        >
-          <MatchTimer seconds={elapsedSeconds} label={t.common.time} />
-          <div
-            style={{
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              color: mistakes > 0 ? tokens.statusError : tokens.textMuted,
-              fontVariantNumeric: 'tabular-nums',
+      {/* Left Column: Stats + Back + Grid or Waiting State */}
+      <div className="zimm-board-col">
+        <div className="zimm-board-meta">
+          <div className="zimm-stats">
+            <div className="zimm-stat">
+              <span className="zimm-stat__label">{t.game.mistakes}</span>
+              <span className={`zimm-stat__value ${mistakes > 0 ? 'zimm-stat__value--error' : ''}`}>
+                {mistakes}
+              </span>
+            </div>
+            <MatchTimer seconds={elapsedSeconds} />
+          </div>
+
+          <button
+            type="button"
+            className="zimm-btn-util"
+            onClick={() => {
+              setIsSolving(false);
+              setActiveChallenge(null);
             }}
           >
-            {t.game.mistakes}: {mistakes}
-          </div>
+            {t.common.back}
+          </button>
         </div>
 
-        {!isSolving && !isOpponentRole && (
+        {!isSolving && activeChallenge.status === 'pending' ? (
           <div
             style={{
-              width: '100%',
-              backgroundColor: tokens.bgElevated,
-              padding: '1.5rem',
-              borderRadius: '8px',
-              border: `1px solid ${tokens.borderSubtle}`,
-              textAlign: 'center',
+              padding: 'var(--space-6) var(--space-4)',
+              borderTop: '1px solid var(--color-borderSubtle)',
+              borderBottom: '1px solid var(--color-borderSubtle)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-3)',
             }}
           >
-            <h3 style={{ margin: '0 0 0.5rem', color: tokens.statusSuccess }}>
+            <h3 className="zimm-mode-header__title" style={{ color: 'var(--color-statusSuccess)' }}>
               {t.game.completed}
             </h3>
-            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: tokens.textMuted }}>
-              {t.async.waitingOpponentFinish}
-            </p>
-            <div
-              style={{
-                backgroundColor: tokens.bgSecondary,
-                padding: '0.75rem',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                color: tokens.textPrimary,
-              }}
-            >
+            <p className="zimm-mode-header__desc">{t.async.waitingOpponentFinish}</p>
+            <p className="zimm-mode-header__desc">
               {t.async.shareCodePrompt}{' '}
-              <span style={{ color: tokens.brandPrimary }}>{activeChallenge.code}</span>
-            </div>
+              <span className="zimm-code">{activeChallenge.code}</span>
+            </p>
           </div>
-        )}
-
-        {isSolving && board.length > 0 && (
-          <SudokuGrid
-            board={board}
-            selectedCell={selectedCell}
-            onSelectCell={handleCellSelect}
-            onDigitInput={handleDigitInput}
-            onErase={handleErase}
-            onToggleNotesMode={() => setInputMode((m) => (m === 'value' ? 'notes' : 'value'))}
-            onRequestHint={handleRequestHint}
-          />
+        ) : (
+          <div className="zimm-grid-wrap">
+            {isSolving && board.length > 0 && (
+              <SudokuGrid
+                board={board}
+                selectedCell={selectedCell}
+                completedUnitCells={completedUnitCells}
+                onSelectCell={handleCellSelect}
+                onDigitInput={handleDigitInput}
+                onErase={handleErase}
+                onUndo={handleUndo}
+                onToggleNotesMode={() => setInputMode((m) => (m === 'value' ? 'notes' : 'value'))}
+                onRequestHint={handleRequestHint}
+              />
+            )}
+          </div>
         )}
       </div>
 
-      {/* Right Column: Challenge Info & Keypad */}
-      <div className="zimm-controls-column">
-        <div
-          style={{
-            backgroundColor: tokens.bgElevated,
-            border: `1px solid ${tokens.borderSubtle}`,
-            borderRadius: '8px',
-            padding: '0.85rem 1rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.65rem',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: tokens.textPrimary }}>
-              {t.modes.asyncTitle}
-            </h2>
-            <span
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                padding: '0.1rem 0.45rem',
-                borderRadius: '4px',
-                backgroundColor: tokens.brandPrimary,
-                color: '#ffffff',
-              }}
-            >
-              {t.modes.asyncBadge}
-            </span>
-          </div>
-
+      {/* Right Column: Challenge Info + Code + Keypad */}
+      <div className="zimm-controls-col">
+        <div className="zimm-mode-header">
+          <h2 className="zimm-mode-header__title">{t.modes.asyncTitle}</h2>
           <div
             style={{
-              backgroundColor: tokens.bgSecondary,
-              padding: '0.65rem 0.75rem',
-              borderRadius: '6px',
-              border: `1px solid ${tokens.borderSubtle}`,
               display: 'flex',
-              justifyContent: 'space-between',
               alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 'var(--space-2)',
+              marginTop: 'var(--space-2)',
             }}
           >
             <div>
-              <span style={{ fontSize: '0.72rem', color: tokens.textMuted }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-textMuted)' }}>
                 {t.async.challengeCode}
-              </span>
-              <div
-                style={{
-                  fontSize: '1.1rem',
-                  fontWeight: 800,
-                  color: tokens.brandPrimary,
-                  letterSpacing: '0.1em',
-                  fontFamily: 'monospace',
-                }}
-              >
-                {activeChallenge.code}
               </div>
+              <div className="zimm-code">{activeChallenge.code}</div>
             </div>
             <button
               type="button"
+              className="zimm-btn-util"
+              style={{ minWidth: '8.5rem', textAlign: 'center' }}
               onClick={handleCopyCode}
-              style={{
-                minWidth: '8.5rem',
-                padding: '0.35rem 0.65rem',
-                borderRadius: '4px',
-                border: `1px solid ${tokens.borderSubtle}`,
-                backgroundColor: tokens.bgElevated,
-                color: tokens.textPrimary,
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'center',
-              }}
             >
               {copied ? t.common.copied : t.common.copy}
             </button>
@@ -531,6 +408,8 @@ export const AsyncMatchView: React.FC = () => {
             onToggleInputMode={() => setInputMode((m) => (m === 'value' ? 'notes' : 'value'))}
             onDigitClick={handleDigitInput}
             onEraseClick={handleErase}
+            onUndoClick={handleUndo}
+            canUndo={history.length > 0 && isSolving}
             onHintClick={handleRequestHint}
             hintsRemaining={3 - hintsUsed}
             maxHints={3}
@@ -538,7 +417,6 @@ export const AsyncMatchView: React.FC = () => {
         )}
       </div>
 
-      {/* Staged Hint Modal */}
       <HintModal
         hint={currentHint}
         currentStage={hintStage}
@@ -547,7 +425,6 @@ export const AsyncMatchView: React.FC = () => {
         hintsRemaining={3 - hintsUsed}
       />
 
-      {/* Result Modal when resolved */}
       {resultModalDelta && (
         <MatchResultModal
           deltaA={resultModalDelta}

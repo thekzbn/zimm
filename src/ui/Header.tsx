@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useI18n } from '../i18n/i18nContext';
-import { matchStore } from '../server/matchStore';
 import { useTheme } from '../theme/themeContext';
 
-export type GameModeTab = 'solo' | 'live' | 'async';
+export type GameModeTab = 'home' | 'live' | 'async' | 'solo';
 
 interface HeaderProps {
   activeMode: GameModeTab;
@@ -19,157 +18,126 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAbout,
 }) => {
   const { t, locale, toggleLocale } = useI18n();
-  const { theme, toggleTheme, tokens } = useTheme();
-  const [rating, setRating] = useState<number>(() => matchStore.getUserProfile().rating);
-
-  useEffect(() => {
-    setRating(matchStore.getUserProfile().rating);
-    return matchStore.subscribe(() => {
-      setRating(matchStore.getUserProfile().rating);
-    });
-  }, []);
-
-  const navButtonStyle = (isActive: boolean, isPrimary = false): React.CSSProperties => ({
-    padding: '0.4rem 0.8rem',
-    borderRadius: '6px',
-    border: isActive
-      ? `1px solid ${isPrimary ? tokens.brandPrimary : tokens.borderStrong}`
-      : `1px solid transparent`,
-    backgroundColor: isActive
-      ? isPrimary
-        ? tokens.brandPrimary
-        : tokens.bgSelected
-      : 'transparent',
-    color: isActive && isPrimary ? '#ffffff' : tokens.textPrimary,
-    fontWeight: isActive ? 600 : 500,
-    fontSize: '0.85rem',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  });
-
-  const utilityButtonStyle: React.CSSProperties = {
-    padding: '0.35rem 0.65rem',
-    borderRadius: '6px',
-    border: `1px solid ${tokens.borderSubtle}`,
-    backgroundColor: tokens.bgSecondary,
-    color: tokens.textPrimary,
-    fontSize: '0.8rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <header
-      style={{
-        backgroundColor: tokens.bgElevated,
-        borderBottom: `1px solid ${tokens.borderSubtle}`,
-        padding: '0.6rem 1rem',
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '0.75rem',
-      }}
-    >
-      {/* Brand and Rating */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div
-            aria-hidden="true"
-            style={{
-              width: '2rem',
-              height: '2rem',
-              borderRadius: '6px',
-              backgroundColor: tokens.brandPrimary,
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '1.15rem',
-              letterSpacing: '-0.03em',
-            }}
-          >
-            Z
-          </div>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: '1.15rem',
-              fontWeight: 700,
-              color: tokens.textPrimary,
-              lineHeight: 1.1,
-            }}
-          >
-            {t.common.appName}
-          </h1>
-        </div>
-
-        <div
-          aria-label={`${t.common.rating}: ${rating}`}
-          style={{
-            backgroundColor: tokens.bgSecondary,
-            border: `1px solid ${tokens.borderSubtle}`,
-            padding: '0.2rem 0.55rem',
-            borderRadius: '4px',
-            fontSize: '0.78rem',
-            fontWeight: 600,
-            color: tokens.textMuted,
-            fontVariantNumeric: 'tabular-nums',
-          }}
+    <header className="zimm-header">
+      <div className="zimm-header__top">
+        <button
+          type="button"
+          className="zimm-header__brand"
+          onClick={() => onSelectMode('home')}
+          aria-label={t.nav.home}
         >
-          {t.common.rating}{' '}
-          <span style={{ color: tokens.textPrimary, fontWeight: 700 }}>{rating}</span>
-        </div>
+          <span className="zimm-header__mark" aria-hidden="true">
+            Z
+          </span>
+          <h1 className="zimm-header__wordmark">{t.common.appName}</h1>
+        </button>
       </div>
 
-      {/* Primary Game Modes */}
-      <nav aria-label="Game modes" style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
+      <nav className="zimm-nav" aria-label="Game modes">
         <button
-          onClick={() => onSelectMode('solo')}
-          aria-current={activeMode === 'solo' ? 'page' : undefined}
-          style={navButtonStyle(activeMode === 'solo', true)}
+          type="button"
+          className="zimm-nav__tab"
+          onClick={() => onSelectMode('home')}
+          aria-current={activeMode === 'home' ? 'page' : undefined}
         >
-          {t.nav.solo}
+          {t.nav.home}
         </button>
         <button
+          type="button"
+          className="zimm-nav__tab"
           onClick={() => onSelectMode('live')}
           aria-current={activeMode === 'live' ? 'page' : undefined}
-          style={navButtonStyle(activeMode === 'live')}
         >
           {t.nav.liveH2H}
         </button>
         <button
+          type="button"
+          className="zimm-nav__tab"
           onClick={() => onSelectMode('async')}
           aria-current={activeMode === 'async' ? 'page' : undefined}
-          style={navButtonStyle(activeMode === 'async')}
         >
           {t.nav.asyncH2H}
         </button>
+        <button
+          type="button"
+          className="zimm-nav__tab"
+          onClick={() => onSelectMode('solo')}
+          aria-current={activeMode === 'solo' ? 'page' : undefined}
+        >
+          {t.nav.solo}
+        </button>
       </nav>
 
-      {/* Utility Controls: Guide, About, Language, Theme */}
-      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <button onClick={onOpenGuide} style={utilityButtonStyle}>
-          {t.nav.rules}
-        </button>
-        <button onClick={onOpenAbout} style={utilityButtonStyle}>
-          {t.nav.about}
-        </button>
+      <div className="zimm-header__utils">
         <button
+          type="button"
+          className="zimm-icon-btn"
+          onClick={onOpenGuide}
+          aria-label={t.nav.rules}
+          title={t.nav.rules}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          className="zimm-icon-btn"
+          onClick={onOpenAbout}
+          aria-label={t.nav.about}
+          title={t.nav.about}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          className="zimm-icon-btn"
           onClick={toggleLocale}
           aria-label={t.nav.switchLanguage}
-          style={utilityButtonStyle}
+          title={locale === 'en' ? 'Yorùbá' : 'English'}
         >
-          {locale === 'en' ? 'Yorùbá' : 'English'}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
         </button>
+
         <button
+          type="button"
+          className="zimm-icon-btn"
           onClick={toggleTheme}
           aria-label={t.nav.switchTheme}
-          style={utilityButtonStyle}
+          title={theme === 'light' ? 'Dark' : 'Light'}
         >
-          {theme === 'light' ? 'Dark' : 'Light'}
+          {theme === 'light' ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          )}
         </button>
       </div>
     </header>
